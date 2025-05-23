@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.product.mapper.ProductMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.flashsale.product.entity.Product">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="category_id" property="categoryId" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="image" property="image" jdbcType="VARCHAR"/>
+        <result column="images" property="images" jdbcType="VARCHAR"/>
+        <result column="price" property="price" jdbcType="DECIMAL"/>
+        <result column="stock" property="stock" jdbcType="INTEGER"/>
+        <result column="sold_count" property="soldCount" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 基础字段 -->
+    <sql id="Base_Column_List">
+        id, category_id, name, description, image, images, price, stock, sold_count, status, create_time, update_time
+    </sql>
+
+    <!-- 根据ID查找商品 -->
+    <select id="findById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据分类ID查找商品列表 -->
+    <select id="findByCategoryId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        WHERE category_id = #{categoryId}
+        AND status = 1
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查找所有商品 -->
+    <select id="findAll" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 插入商品 -->
+    <insert id="insert" parameterType="com.flashsale.product.entity.Product" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO product (category_id, name, description, image, images, price, stock, sold_count, status, create_time, update_time)
+        VALUES (#{categoryId}, #{name}, #{description}, #{image}, #{images}, #{price}, #{stock}, #{soldCount}, #{status}, #{createTime}, #{updateTime})
+    </insert>
+
+    <!-- 根据ID更新商品 -->
+    <update id="updateById" parameterType="com.flashsale.product.entity.Product">
+        UPDATE product
+        <set>
+            <if test="categoryId != null">category_id = #{categoryId},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="image != null">image = #{image},</if>
+            <if test="images != null">images = #{images},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="soldCount != null">sold_count = #{soldCount},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除商品 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM product WHERE id = #{id}
+    </delete>
+
+    <!-- 更新商品库存 -->
+    <update id="updateStock">
+        UPDATE product
+        SET stock = #{stock}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 扣减库存 -->
+    <update id="decreaseStock">
+        UPDATE product
+        SET stock = stock - #{quantity}, update_time = NOW()
+        WHERE id = #{productId}
+        AND stock >= #{quantity}
+    </update>
+
+    <!-- 增加库存 -->
+    <update id="increaseStock">
+        UPDATE product
+        SET stock = stock + #{quantity}, update_time = NOW()
+        WHERE id = #{productId}
+    </update>
+
+    <!-- 分页查询商品列表 -->
+    <select id="findByPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM product
+        <where>
+            status = 1
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计商品总数 -->
+    <select id="countProducts" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM product
+        <where>
+            status = 1
+            <if test="categoryId != null">
+                AND category_id = #{categoryId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+</mapper> 

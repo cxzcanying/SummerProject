@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.product.mapper.FlashSaleProductMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.flashsale.product.entity.FlashSaleProduct">
+        <id column="id" jdbcType="BIGINT" property="id"/>
+        <result column="activity_id" jdbcType="BIGINT" property="activityId"/>
+        <result column="product_id" jdbcType="BIGINT" property="productId"/>
+        <result column="flash_sale_price" jdbcType="DECIMAL" property="flashSalePrice"/>
+        <result column="flash_sale_stock" jdbcType="INTEGER" property="flashSaleStock"/>
+        <result column="limit_per_user" jdbcType="INTEGER" property="limitPerUser"/>
+        <result column="sold_count" jdbcType="INTEGER" property="soldCount"/>
+        <result column="start_time" jdbcType="TIMESTAMP" property="startTime"/>
+        <result column="end_time" jdbcType="TIMESTAMP" property="endTime"/>
+        <result column="status" jdbcType="TINYINT" property="status"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, activity_id, product_id, flash_sale_price, flash_sale_stock, limit_per_user,
+        sold_count, start_time, end_time, status, create_time, update_time
+    </sql>
+
+    <!-- 插入秒杀商品 -->
+    <insert id="insert" parameterType="com.flashsale.product.entity.FlashSaleProduct" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO flash_sale_product (
+            activity_id, product_id, flash_sale_price, flash_sale_stock, limit_per_user,
+            sold_count, start_time, end_time, status, create_time, update_time
+        ) VALUES (
+            #{activityId}, #{productId}, #{flashSalePrice}, #{flashSaleStock}, #{limitPerUser},
+            #{soldCount}, #{startTime}, #{endTime}, #{status}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 根据ID删除秒杀商品 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM flash_sale_product WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新秒杀商品 -->
+    <update id="updateById" parameterType="com.flashsale.product.entity.FlashSaleProduct">
+        UPDATE flash_sale_product 
+        SET 
+            activity_id = #{activityId},
+            product_id = #{productId},
+            flash_sale_price = #{flashSalePrice},
+            flash_sale_stock = #{flashSaleStock},
+            limit_per_user = #{limitPerUser},
+            sold_count = #{soldCount},
+            start_time = #{startTime},
+            end_time = #{endTime},
+            status = #{status},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询秒杀商品 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM flash_sale_product
+        WHERE id = #{id}
+    </select>
+
+</mapper> 

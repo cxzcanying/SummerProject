@@ -1,0 +1,368 @@
+package com.flashsale.payment.service.impl;
+
+import com.flashsale.common.result.Result;
+import com.flashsale.common.result.PageResult;
+import com.flashsale.payment.dto.PaymentDTO;
+import com.flashsale.payment.entity.Payment;
+import com.flashsale.payment.mapper.PaymentMapper;
+import com.flashsale.payment.service.PaymentService;
+import com.flashsale.payment.vo.PaymentVO;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+/**
+ * 支付服务实现类
+ * @author 21311
+ */
+@Slf4j
+@Service
+public class PaymentServiceImpl implements PaymentService {
+
+    @Autowired
+    private PaymentMapper paymentMapper;
+
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private static final String PAYMENT_CACHE_KEY = "payment:";
+    private static final long CACHE_EXPIRE_TIME = 30; // 30分钟
+
+    @Override
+    @Transactional
+    public Result<PaymentVO> createPayment(PaymentDTO paymentDTO) {
+        try {
+            // 检查订单是否已有支付记录
+            Payment existPayment = paymentMapper.findByOrderId(paymentDTO.getOrderId());
+            if (existPayment != null && existPayment.getStatus() == 1) {
+                return Result.error("订单已支付，请勿重复支付");
+            }
+
+            // 创建支付记录
+            Payment payment = new Payment();
+            BeanUtils.copyProperties(paymentDTO, payment);
+            payment.setPaymentNo(generatePaymentNo());
+            payment.setStatus(0); // 待支付
+            payment.setCreateTime(new Date());
+            payment.setUpdateTime(new Date());
+
+            int result = paymentMapper.insert(payment);
+            if (result > 0) {
+                // 缓存支付信息
+                cachePayment(payment);
+
+                PaymentVO paymentVO = convertToVO(payment);
+                log.info("支付订单创建成功，支付流水号：{}", payment.getPaymentNo());
+                return Result.success(paymentVO);
+            } else {
+                return Result.error("创建支付订单失败");
+            }
+        } catch (Exception e) {
+            log.error("创建支付订单异常", e);
+            return Result.error("创建支付订单失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Result<Void> handlePaymentCallback(String paymentNo, String thirdPartyPaymentNo, Integer status) {
+        try {
+            Payment payment = paymentMapper.findByPaymentNo(paymentNo);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
+
+            if (payment.getStatus() == 1) {
+                log.warn("支付已成功，无需重复处理，支付流水号：{}", paymentNo);
+                return Result.success();
+            }
+
+            // 更新支付信息
+            int result = paymentMapper.updatePaymentInfo(payment.getId(), thirdPartyPaymentNo, status);
+            if (result > 0) {
+                // 如果支付成功，更新支付时间
+                if (status == 1) {
+                    payment.setPaymentTime(new Date());
+                    payment.setUpdateTime(new Date());
+                    paymentMapper.updateById(payment);
+                }
+
+                // 删除缓存
+                deletePaymentCache(paymentNo);
+
+                log.info("支付回调处理成功，支付流水号：{}，状态：{}", paymentNo, status);
+                return Result.success();
+            } else {
+                return Result.error("支付回调处理失败");
+            }
+        } catch (Exception e) {
+            log.error("处理支付回调异常", e);
+            return Result.error("处理支付回调失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<PaymentVO> getPaymentDetail(String paymentNo) {
+        try {
+            // 先从缓存获取
+            PaymentVO paymentVO = getPaymentFromCache(paymentNo);
+            if (paymentVO != null) {
+                return Result.success(paymentVO);
+            }
+
+            // 从数据库获取
+            Payment payment = paymentMapper.findByPaymentNo(paymentNo);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
+
+            paymentVO = convertToVO(payment);
+            // 缓存支付信息
+            cachePayment(payment);
+
+            return Result.success(paymentVO);
+        } catch (Exception e) {
+            log.error("获取支付详情异常", e);
+            return Result.error("获取支付详情失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<PaymentVO> getPaymentByOrderId(Long orderId) {
+        try {
+            Payment payment = paymentMapper.findByOrderId(orderId);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
+
+            PaymentVO paymentVO = convertToVO(payment);
+            return Result.success(paymentVO);
+        } catch (Exception e) {
+            log.error("根据订单ID获取支付记录异常", e);
+            return Result.error("获取支付记录失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    public Result<PageResult<PaymentVO>> getUserPayments(Long userId, Integer page, Integer size) {
+        try {
+            // 计算偏移量
+            Integer offset = (page - 1) * size;
+
+            // 查询支付记录列表
+            List<Payment> payments = paymentMapper.findByUserIdWithPage(userId, offset, size);
+
+            // 查询总数
+            Long total = paymentMapper.countByUserId(userId);
+
+            // 转换为VO
+            List<PaymentVO> paymentVOList = payments.stream()
+                    .map(this::convertToVO)
+                    .collect(Collectors.toList());
+
+            PageResult<PaymentVO> pageResult = new PageResult<>(paymentVOList, total, page, size);
+
+            return Result.success(pageResult);
+        } catch (Exception e) {
+            log.error("查询用户支付记录异常", e);
+            return Result.error("查询支付记录失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Result<Void> applyRefund(String paymentNo, BigDecimal refundAmount, String refundReason) {
+        try {
+            Payment payment = paymentMapper.findByPaymentNo(paymentNo);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
+
+            if (payment.getStatus() != 1) {
+                return Result.error("只有支付成功的订单才能申请退款");
+            }
+
+            if (refundAmount.compareTo(payment.getAmount()) > 0) {
+                return Result.error("退款金额不能大于支付金额");
+            }
+
+            // 这里应该调用第三方支付平台的退款接口
+            // 模拟退款处理
+            boolean refundSuccess = processRefund(payment, refundAmount, refundReason);
+            
+            if (refundSuccess) {
+                // 更新支付状态为已退款
+                paymentMapper.updateStatus(payment.getId(), 3);
+                // 删除缓存
+                deletePaymentCache(paymentNo);
+                
+                log.info("退款申请成功，支付流水号：{}，退款金额：{}", paymentNo, refundAmount);
+                return Result.success();
+            } else {
+                return Result.error("退款申请失败");
+            }
+        } catch (Exception e) {
+            log.error("申请退款异常", e);
+            return Result.error("申请退款失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Result<Void> handleRefundCallback(String refundNo, Integer status) {
+        try {
+            // 这里处理退款回调逻辑
+            log.info("处理退款回调，退款流水号：{}，状态：{}", refundNo, status);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("处理退款回调异常", e);
+            return Result.error("处理退款回调失败：" + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public Result<Void> cancelPayment(String paymentNo) {
+        try {
+            Payment payment = paymentMapper.findByPaymentNo(paymentNo);
+            if (payment == null) {
+                return Result.error("支付记录不存在");
+            }
+
+            if (payment.getStatus() != 0) {
+                return Result.error("只有待支付的订单才能取消");
+            }
+
+            // 更新支付状态为支付失败
+            int result = paymentMapper.updateStatus(payment.getId(), 2);
+            if (result > 0) {
+                // 删除缓存
+                deletePaymentCache(paymentNo);
+                log.info("支付取消成功，支付流水号：{}", paymentNo);
+                return Result.success();
+            } else {
+                return Result.error("取消支付失败");
+            }
+        } catch (Exception e) {
+            log.error("取消支付异常", e);
+            return Result.error("取消支付失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 生成支付流水号
+     */
+    private String generatePaymentNo() {
+        return "PAY" + System.currentTimeMillis() + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    /**
+     * 模拟第三方退款处理
+     */
+    private boolean processRefund(Payment payment, BigDecimal refundAmount, String refundReason) {
+        // 这里应该调用具体的第三方支付平台退款接口
+        // 模拟处理
+        log.info("模拟退款处理，支付方式：{}，退款金额：{}", payment.getPaymentMethod(), refundAmount);
+        return true;
+    }
+
+    /**
+     * 转换为VO
+     */
+    private PaymentVO convertToVO(Payment payment) {
+        PaymentVO paymentVO = new PaymentVO();
+        BeanUtils.copyProperties(payment, paymentVO);
+        
+        // 设置支付方式名称
+        paymentVO.setPaymentMethodName(getPaymentMethodName(payment.getPaymentMethod()));
+        
+        // 设置状态名称
+        paymentVO.setStatusName(getStatusName(payment.getStatus()));
+        
+        return paymentVO;
+    }
+
+    /**
+     * 获取支付方式名称
+     */
+    private String getPaymentMethodName(Integer paymentMethod) {
+        switch (paymentMethod) {
+            case 1:
+                return "支付宝";
+            case 2:
+                return "微信支付";
+            case 3:
+                return "银行卡";
+            default:
+                return "未知";
+        }
+    }
+
+    /**
+     * 获取状态名称
+     */
+    private String getStatusName(Integer status) {
+        switch (status) {
+            case 0:
+                return "待支付";
+            case 1:
+                return "支付成功";
+            case 2:
+                return "支付失败";
+            case 3:
+                return "已退款";
+            default:
+                return "未知";
+        }
+    }
+
+    /**
+     * 缓存支付信息
+     */
+    private void cachePayment(Payment payment) {
+        try {
+            String key = PAYMENT_CACHE_KEY + payment.getPaymentNo();
+            redisTemplate.opsForValue().set(key, payment, CACHE_EXPIRE_TIME, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("缓存支付信息失败", e);
+        }
+    }
+
+    /**
+     * 从缓存获取支付信息
+     */
+    private PaymentVO getPaymentFromCache(String paymentNo) {
+        try {
+            String key = PAYMENT_CACHE_KEY + paymentNo;
+            Payment payment = (Payment) redisTemplate.opsForValue().get(key);
+            if (payment != null) {
+                return convertToVO(payment);
+            }
+        } catch (Exception e) {
+            log.error("从缓存获取支付信息失败", e);
+        }
+        return null;
+    }
+
+    /**
+     * 删除支付缓存
+     */
+    private void deletePaymentCache(String paymentNo) {
+        try {
+            String key = PAYMENT_CACHE_KEY + paymentNo;
+            redisTemplate.delete(key);
+        } catch (Exception e) {
+            log.error("删除支付缓存失败", e);
+        }
+    }
+} 

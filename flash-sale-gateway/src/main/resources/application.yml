@@ -1,0 +1,85 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: flash-sale-gateway
+  profiles:
+    active: dev
+  config:
+    import: "optional:nacos:flash-sale-gateway-dev.yml"
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+      config:
+        server-addr: 127.0.0.1:8848
+        file-extension: yml
+        name: ${spring.application.name}-${spring.profiles.active}
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: user-service
+          uri: lb://flash-sale-user
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+            
+        - id: product-service
+          uri: lb://flash-sale-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - StripPrefix=1
+            
+        - id: seckill-service
+          uri: lb://flash-sale-seckill
+          predicates:
+            - Path=/api/seckill/**
+          filters:
+            - StripPrefix=1
+            
+        - id: order-service
+          uri: lb://flash-sale-order
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - StripPrefix=1
+            
+        - id: payment-service
+          uri: lb://flash-sale-payment
+          predicates:
+            - Path=/api/payment/**
+          filters:
+            - StripPrefix=1
+            
+        - id: coupon-service
+          uri: lb://flash-sale-coupon
+          predicates:
+            - Path=/api/coupon/**
+          filters:
+            - StripPrefix=1
+  
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 0
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 8
+        min-idle: 0
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    health:
+      show-details: always 

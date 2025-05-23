@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.flashsale.user.mapper.UserMapper">
+
+    <resultMap id="userResultMap" type="com.flashsale.user.entity.User">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="salt" property="salt"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar" property="avatar"/>
+        <result column="gender" property="gender"/>
+        <result column="birthday" property="birthday"/>
+        <result column="status" property="status"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+        <result column="last_login_ip" property="lastLoginIp"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- Base Column List -->
+    <sql id="baseColumns">
+        id, username, password, salt, phone, email, nickname, avatar, 
+        gender, birthday, status, last_login_time, last_login_ip, 
+        create_time, update_time
+    </sql>
+
+    <!-- 根据ID查找用户 -->
+    <select id="findById" parameterType="long" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM user 
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户名查找用户 -->
+    <select id="findByUsername" parameterType="string" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM user 
+        WHERE username = #{username}
+    </select>
+
+    <!-- 根据手机号查找用户 -->
+    <select id="findByPhone" parameterType="string" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM user 
+        WHERE phone = #{phone}
+    </select>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.flashsale.user.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (
+            username, password, salt, phone, email, nickname, avatar, 
+            gender, birthday, status, last_login_time, last_login_ip, 
+            create_time, update_time
+        ) VALUES (
+            #{username}, #{password}, #{salt}, #{phone}, #{email}, #{nickname}, #{avatar},
+            #{gender}, #{birthday}, #{status}, #{lastLoginTime}, #{lastLoginIp},
+            #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 根据ID更新用户 -->
+    <update id="updateById" parameterType="com.flashsale.user.entity.User">
+        UPDATE user SET
+            username = #{username},
+            password = #{password},
+            salt = #{salt},
+            phone = #{phone},
+            email = #{email},
+            nickname = #{nickname},
+            avatar = #{avatar},
+            gender = #{gender},
+            birthday = #{birthday},
+            status = #{status},
+            last_login_time = #{lastLoginTime},
+            last_login_ip = #{lastLoginIp},
+            update_time = #{updateTime}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除用户 -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM user WHERE id = #{id}
+    </delete>
+
+</mapper> 
