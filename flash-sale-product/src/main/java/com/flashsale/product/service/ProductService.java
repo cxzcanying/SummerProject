@@ -3,13 +3,12 @@ package com.flashsale.product.service;
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.PageResult;
 import com.flashsale.product.dto.ProductDTO;
-import com.flashsale.product.entity.Product;
 import com.flashsale.product.vo.ProductVO;
 
-import java.util.List;
 
 /**
  * 商品服务接口
+ * @author 21311
  */
 public interface ProductService {
 

@@ -1,5 +1,5 @@
 server:
-  port: 8000
+  port: 8080
 
 spring:
   application:
@@ -12,74 +12,43 @@ spring:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
+        group: flash-sale
       config:
         server-addr: 127.0.0.1:8848
+        group: flash-sale
         file-extension: yml
-        name: ${spring.application.name}-${spring.profiles.active}
     gateway:
+      # 默认过滤器
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        - AddResponseHeader=X-Response-Default-Foo, Default-Bar
+      
+      # 发现定位器配置
       discovery:
         locator:
-          enabled: true
-      routes:
-        - id: user-service
-          uri: lb://flash-sale-user
-          predicates:
-            - Path=/api/user/**
-          filters:
-            - StripPrefix=1
-            
-        - id: product-service
-          uri: lb://flash-sale-product
-          predicates:
-            - Path=/api/product/**
-          filters:
-            - StripPrefix=1
-            
-        - id: seckill-service
-          uri: lb://flash-sale-seckill
-          predicates:
-            - Path=/api/seckill/**
-          filters:
-            - StripPrefix=1
-            
-        - id: order-service
-          uri: lb://flash-sale-order
-          predicates:
-            - Path=/api/order/**
-          filters:
-            - StripPrefix=1
-            
-        - id: payment-service
-          uri: lb://flash-sale-payment
-          predicates:
-            - Path=/api/payment/**
-          filters:
-            - StripPrefix=1
-            
-        - id: coupon-service
-          uri: lb://flash-sale-coupon
-          predicates:
-            - Path=/api/coupon/**
-          filters:
-            - StripPrefix=1
-  
-  redis:
-    host: 127.0.0.1
-    port: 6379
-    database: 0
-    timeout: 10000
-    lettuce:
-      pool:
-        max-active: 8
-        max-wait: -1
-        max-idle: 8
-        min-idle: 0
+          enabled: false # 关闭自动路由，使用手动配置
+          lower-case-service-id: true
+
 
 management:
   endpoints:
     web:
       exposure:
-        include: '*'
+        include: health,info,gateway,metrics,prometheus
   endpoint:
     health:
-      show-details: always 
+      show-details: always
+    gateway:
+      enabled: true
+
+# 日志配置
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+
+

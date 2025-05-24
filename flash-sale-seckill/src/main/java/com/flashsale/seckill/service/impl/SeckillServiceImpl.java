@@ -1,22 +1,20 @@
 package com.flashsale.seckill.service.impl;
 
+import com.flashsale.common.dto.SeckillDTO;
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.ResultCode;
-import com.flashsale.seckill.dto.SeckillDTO;
 import com.flashsale.seckill.service.SeckillService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 秒杀服务实现类
+ * 秒杀服务实现类 - 已移除lua脚本
  * @author 21311
  */
 @Slf4j
@@ -49,24 +47,6 @@ public class SeckillServiceImpl implements SeckillService {
      */
     private static final long TOKEN_EXPIRE_TIME = 300; // 5分钟
 
-    /**
-     * Lua脚本：原子性扣减库存
-     */
-    private static final String DECREASE_STOCK_LUA = 
-            "local key = KEYS[1] " +
-            "local quantity = tonumber(ARGV[1]) " +
-            "local stock = redis.call('get', key) " +
-            "if stock == false then " +
-            "    return -1 " +
-            "end " +
-            "stock = tonumber(stock) " +
-            "if stock >= quantity then " +
-            "    redis.call('decrby', key, quantity) " +
-            "    return stock - quantity " +
-            "else " +
-            "    return -2 " +
-            "end";
-
     @Override
     public Result<String> doSeckill(SeckillDTO seckillDTO) {
         Long userId = seckillDTO.getUserId();
@@ -86,15 +66,19 @@ public class SeckillServiceImpl implements SeckillService {
                 return Result.error(ResultCode.SECKILL_REPEATED.getCode(), "您已参与过此秒杀活动");
             }
 
-            // 3. 使用Lua脚本原子性扣减库存（保证并发安全）
+            // 3. 使用Redis原子操作扣减库存（替代lua脚本）
             String stockKey = SECKILL_PRODUCT_KEY + flashSaleProductId + ":stock";
-            DefaultRedisScript<Long> script = new DefaultRedisScript<>(DECREASE_STOCK_LUA, Long.class);
-            Long result = redisTemplate.execute(script, Arrays.asList(stockKey), quantity);
-
-            if (result == -1) {
+            
+            // 使用Redis的decrement操作，这是原子的
+            Long remainingStock = redisTemplate.opsForValue().decrement(stockKey, quantity);
+            
+            if (remainingStock == null) {
                 return Result.error(ResultCode.PRODUCT_NOT_EXIST.getCode(), "商品不存在");
             }
-            if (result == -2) {
+            
+            if (remainingStock < 0) {
+                // 库存不足，回滚
+                redisTemplate.opsForValue().increment(stockKey, quantity);
                 return Result.error(ResultCode.PRODUCT_STOCK_NOT_ENOUGH.getCode(), "库存不足");
             }
 

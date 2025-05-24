@@ -1,13 +1,14 @@
 package com.flashsale.order.service;
 
 import com.flashsale.common.result.Result;
+import com.flashsale.common.dto.SeckillDTO;
 import com.flashsale.order.entity.FlashSaleOrder;
-import com.flashsale.seckill.dto.SeckillDTO;
 
 import java.util.List;
 
 /**
  * 订单服务接口
+ * @author 21311
  */
 public interface OrderService {
 

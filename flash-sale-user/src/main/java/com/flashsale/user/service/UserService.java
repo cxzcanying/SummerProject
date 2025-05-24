@@ -1,8 +1,8 @@
 package com.flashsale.user.service;
 
 import com.flashsale.common.result.Result;
+import com.flashsale.user.dto.LoginDTO;
 import com.flashsale.user.dto.UserDTO;
-import com.flashsale.user.entity.User;
 import com.flashsale.user.vo.UserVO;
 
 /**
@@ -22,11 +22,10 @@ public interface UserService{
     /**
      * 用户登录
      *
-     * @param username 用户名
-     * @param password 密码
+     * @param loginDTO 登录信息
      * @return 登录结果
      */
-    Result<String> login(String username, String password);
+    Result<String> login(LoginDTO loginDTO);
 
     /**
      * 获取用户信息

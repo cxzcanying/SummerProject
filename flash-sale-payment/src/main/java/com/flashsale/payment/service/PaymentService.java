@@ -3,7 +3,7 @@ package com.flashsale.payment.service;
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.PageResult;
 import com.flashsale.payment.dto.PaymentDTO;
-import com.flashsale.payment.entity.Payment;
+
 import com.flashsale.payment.vo.PaymentVO;
 
 import java.math.BigDecimal;

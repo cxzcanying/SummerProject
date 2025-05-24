@@ -4,11 +4,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import jakarta.annotation.Resource;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -172,6 +170,6 @@ public class RedisService {
      * Execute Lua script with single key
      */
     public <T> T execute(DefaultRedisScript<T> script, String key, Object... args) {
-        return execute(script, Arrays.asList(key), args);
+        return execute(script, Collections.singletonList(key), args);
     }
 } 

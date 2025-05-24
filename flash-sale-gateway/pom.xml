@@ -38,11 +38,7 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
-        <!-- Redis -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
+                <!-- Redis依赖已移除 - 不再使用Redis限流功能 -->
 
         <!-- Actuator -->
         <dependency>

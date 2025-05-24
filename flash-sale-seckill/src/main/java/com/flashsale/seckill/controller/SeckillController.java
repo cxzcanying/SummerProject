@@ -1,13 +1,13 @@
 package com.flashsale.seckill.controller;
 
+import com.flashsale.common.dto.SeckillDTO;
 import com.flashsale.common.result.Result;
-import com.flashsale.seckill.dto.SeckillDTO;
 import com.flashsale.seckill.service.SeckillService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 /**
  * 秒杀控制器

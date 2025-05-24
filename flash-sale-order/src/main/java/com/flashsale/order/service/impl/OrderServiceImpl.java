@@ -2,10 +2,10 @@ package com.flashsale.order.service.impl;
 
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.ResultCode;
+import com.flashsale.common.dto.SeckillDTO;
 import com.flashsale.order.entity.FlashSaleOrder;
 import com.flashsale.order.mapper.FlashSaleOrderMapper;
 import com.flashsale.order.service.OrderService;
-import com.flashsale.seckill.dto.SeckillDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,6 +19,7 @@ import java.util.UUID;
 
 /**
  * 订单服务实现类
+ * @author 21311
  */
 @Slf4j
 @Service

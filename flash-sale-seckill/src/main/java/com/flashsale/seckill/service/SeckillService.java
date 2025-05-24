@@ -1,7 +1,7 @@
 package com.flashsale.seckill.service;
 
+import com.flashsale.common.dto.SeckillDTO;
 import com.flashsale.common.result.Result;
-import com.flashsale.seckill.dto.SeckillDTO;
 
 /**
  * 秒杀服务接口

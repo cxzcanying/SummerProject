@@ -5,7 +5,7 @@ spring:
   application:
     name: flash-sale-payment
   profiles:
-    active: dev
+    active: local
   config:
     import: "optional:nacos:flash-sale-payment-dev.yml"
   datasource:
@@ -19,23 +19,26 @@ spring:
       idle-timeout: 300000
       connection-timeout: 60000
       max-lifetime: 1800000
-  redis:
-    host: 127.0.0.1
-    port: 6379
-    database: 0
-    timeout: 10000
-    lettuce:
-      pool:
-        max-active: 8
-        max-wait: -1
-        max-idle: 8
-        min-idle: 0
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      database: 0
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1
+          max-idle: 8
+          min-idle: 0
   cloud:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
+        group: flash-sale
       config:
         server-addr: 127.0.0.1:8848
+        group: flash-sale
         file-extension: yml
         name: ${spring.application.name}-${spring.profiles.active}
 

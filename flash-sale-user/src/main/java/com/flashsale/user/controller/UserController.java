@@ -1,6 +1,7 @@
 package com.flashsale.user.controller;
 
 import com.flashsale.common.result.Result;
+import com.flashsale.user.dto.LoginDTO;
 import com.flashsale.user.dto.UserDTO;
 import com.flashsale.user.service.UserService;
 import com.flashsale.user.vo.UserVO;
@@ -8,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 /**
  * 用户控制器
@@ -35,9 +36,9 @@ public class UserController {
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<String> login(@RequestParam String username, @RequestParam String password) {
-        log.info("用户登录: {}", username);
-        return userService.login(username, password);
+    public Result<String> login(@RequestBody @Valid LoginDTO loginDTO) {
+        log.info("用户登录: {}", loginDTO.getUsername());
+        return userService.login(loginDTO);
     }
 
     /**

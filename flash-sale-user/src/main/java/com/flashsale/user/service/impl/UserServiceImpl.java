@@ -1,8 +1,8 @@
 package com.flashsale.user.service.impl;
 
-import com.flashsale.common.exception.BusinessException;
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.ResultCode;
+import com.flashsale.user.dto.LoginDTO;
 import com.flashsale.user.dto.UserDTO;
 import com.flashsale.user.entity.User;
 import com.flashsale.user.mapper.UserMapper;
@@ -81,9 +81,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public Result<String> login(String username, String password) {
+    public Result<String> login(LoginDTO loginDTO) {
         // 查询用户
-        User user = userMapper.findByUsername(username);
+        User user = userMapper.findByUsername(loginDTO.getUsername());
 
         if (user == null) {
             return Result.error(ResultCode.USER_NOT_EXIST.getCode(), ResultCode.USER_NOT_EXIST.getMessage());
@@ -95,7 +95,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 验证密码
-        String encryptedPassword = md5Encrypt(password + user.getSalt());
+        String encryptedPassword = md5Encrypt(loginDTO.getPassword() + user.getSalt());
         if (!encryptedPassword.equals(user.getPassword())) {
             return Result.error(ResultCode.PASSWORD_ERROR.getCode(), ResultCode.PASSWORD_ERROR.getMessage());
         }
