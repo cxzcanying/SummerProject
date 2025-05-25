@@ -15,16 +15,16 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-@RequestMapping("/order")
+@RequestMapping("/api/order")
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
 
     /**
-     * 根据订单号查询订单
+     * 根据订单号查询订单详情
      */
-    @GetMapping("/{orderNo}")
+    @GetMapping("/detail/{orderNo}")
     public Result<FlashSaleOrder> getOrder(@PathVariable String orderNo) {
         return orderService.getOrderByOrderNo(orderNo);
     }
@@ -35,6 +35,24 @@ public class OrderController {
     @GetMapping("/user/{userId}")
     public Result<List<FlashSaleOrder>> getUserOrders(@PathVariable Long userId) {
         return orderService.getOrdersByUserId(userId);
+    }
+
+    /**
+     * 查询用户待付款订单
+     */
+    @GetMapping("/user/{userId}/pending")
+    public Result<List<FlashSaleOrder>> getUserPendingOrders(@PathVariable Long userId) {
+        return orderService.getUserPendingOrders(userId);
+    }
+
+    /**
+     * 应用优惠券到订单
+     */
+    @PostMapping("/apply-coupon")
+    public Result<Void> applyCoupon(@RequestBody ApplyCouponRequest request) {
+        log.info("订单{}应用优惠券{}", request.getOrderId(), request.getCouponId());
+        // 简化实现
+        return Result.success();
     }
 
     /**
@@ -51,5 +69,16 @@ public class OrderController {
     @PostMapping("/{orderNo}/cancel")
     public Result<Void> cancelOrder(@PathVariable String orderNo) {
         return orderService.cancelOrder(orderNo);
+    }
+
+    // 内部类定义
+    public static class ApplyCouponRequest {
+        private String orderId;
+        private Long couponId;
+        
+        public String getOrderId() { return orderId; }
+        public void setOrderId(String orderId) { this.orderId = orderId; }
+        public Long getCouponId() { return couponId; }
+        public void setCouponId(Long couponId) { this.couponId = couponId; }
     }
 } 

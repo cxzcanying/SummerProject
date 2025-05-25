@@ -1,5 +1,6 @@
 package com.flashsale.gateway.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
  * 网关配置类 - 支持跨域、路由等功能
  * @author 21311
  */
+@Slf4j
 @Configuration
 public class GatewayConfig {
 
@@ -20,36 +22,27 @@ public class GatewayConfig {
      */
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        log.info("正在配置网关路由...");
         return builder.routes()
                 // User service - 用户服务
                 .route("user-service", r -> r.path("/api/user/**")
-                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://flash-sale-user"))
                 
                 // Product service - 商品服务
                 .route("product-service", r -> r.path("/api/product/**")
-                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://flash-sale-product"))
                 
                 // Seckill service - 秒杀服务
                 .route("seckill-service", r -> r.path("/api/seckill/**")
-                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://flash-sale-seckill"))
                 
                 // Order service - 订单服务
                 .route("order-service", r -> r.path("/api/order/**")
-                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://flash-sale-order"))
                 
                 // Payment service - 支付服务
                 .route("payment-service", r -> r.path("/api/payment/**")
-                        .filters(f -> f.stripPrefix(1))
                         .uri("lb://flash-sale-payment"))
-                
-                // Coupon service - 优惠券服务
-                .route("coupon-service", r -> r.path("/api/coupon/**")
-                        .filters(f -> f.stripPrefix(1))
-                        .uri("lb://flash-sale-coupon"))
                 
                 .build();
     }

@@ -3,6 +3,8 @@ package com.flashsale.user.dto;
 import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
+
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -11,6 +13,7 @@ import java.io.Serializable;
  */
 @Data
 public class LoginDTO implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

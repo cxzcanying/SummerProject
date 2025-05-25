@@ -5,6 +5,8 @@ import lombok.Data;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -14,6 +16,7 @@ import java.math.BigDecimal;
  */
 @Data
 public class ProductDTO implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

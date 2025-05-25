@@ -2,6 +2,7 @@ package com.flashsale.product.entity;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -11,6 +12,7 @@ import java.util.Date;
  */
 @Data
 public class FlashSaleActivity implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

@@ -4,6 +4,7 @@ import com.flashsale.common.result.Result;
 import com.flashsale.user.dto.LoginDTO;
 import com.flashsale.user.dto.UserDTO;
 import com.flashsale.user.service.UserService;
+import com.flashsale.user.vo.LoginVO;
 import com.flashsale.user.vo.UserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,7 @@ import jakarta.validation.Valid;
  */
 @Slf4j
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 public class UserController {
 
     @Autowired
@@ -27,7 +28,7 @@ public class UserController {
      * 用户注册
      */
     @PostMapping("/register")
-    public Result<Void> register(@RequestBody @Valid UserDTO userDTO) {
+    public Result<UserVO> register(@RequestBody @Valid UserDTO userDTO) {
         log.info("用户注册: {}", userDTO.getUsername());
         return userService.register(userDTO);
     }
@@ -36,7 +37,7 @@ public class UserController {
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<String> login(@RequestBody @Valid LoginDTO loginDTO) {
+    public Result<LoginVO> login(@RequestBody @Valid LoginDTO loginDTO) {
         log.info("用户登录: {}", loginDTO.getUsername());
         return userService.login(loginDTO);
     }
@@ -44,7 +45,7 @@ public class UserController {
     /**
      * 获取用户信息
      */
-    @GetMapping("/{id}")
+    @GetMapping("/profile/{id}")
     public Result<UserVO> getUserInfo(@PathVariable Long id) {
         log.info("获取用户信息: {}", id);
         return userService.getUserInfo(id);

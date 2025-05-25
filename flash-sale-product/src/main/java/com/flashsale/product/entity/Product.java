@@ -2,6 +2,7 @@ package com.flashsale.product.entity;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -12,6 +13,7 @@ import java.util.Date;
  */
 @Data
 public class Product implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -30,19 +32,24 @@ public class Product implements Serializable {
     private String name;
 
     /**
-     * 商品描述
+     * 商品副标题
      */
-    private String description;
+    private String subtitle;
 
     /**
      * 主图片URL
      */
-    private String image;
+    private String mainImage;
 
     /**
-     * 商品图片JSON
+     * 子图片URL，以逗号分隔
      */
-    private String images;
+    private String subImages;
+
+    /**
+     * 商品详情
+     */
+    private String detail;
 
     /**
      * 价格
@@ -53,11 +60,6 @@ public class Product implements Serializable {
      * 库存数量
      */
     private Integer stock;
-
-    /**
-     * 销售数量
-     */
-    private Integer soldCount;
 
     /**
      * 状态：0-下架，1-上架

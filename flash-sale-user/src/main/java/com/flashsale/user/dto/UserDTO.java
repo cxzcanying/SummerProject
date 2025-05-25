@@ -4,6 +4,8 @@ import lombok.Data;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+
+import java.io.Serial;
 import java.io.Serializable;
 
 /**
@@ -12,6 +14,7 @@ import java.io.Serializable;
  */
 @Data
 public class UserDTO implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

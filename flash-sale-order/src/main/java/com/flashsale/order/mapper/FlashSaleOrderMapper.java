@@ -28,6 +28,11 @@ public interface FlashSaleOrderMapper {
     List<FlashSaleOrder> findByUserId(Long userId);
     
     /**
+     * 根据用户ID查找待付款订单列表
+     */
+    List<FlashSaleOrder> findPendingOrdersByUserId(Long userId);
+    
+    /**
      * 插入订单
      */
     int insert(FlashSaleOrder order);

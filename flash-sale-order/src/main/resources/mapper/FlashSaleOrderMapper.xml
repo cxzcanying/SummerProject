@@ -57,6 +57,14 @@
         ORDER BY create_time DESC
     </select>
 
+    <!-- 根据用户ID查找待付款订单列表 -->
+    <select id="findPendingOrdersByUserId" parameterType="long" resultMap="orderResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM flash_sale_order 
+        WHERE user_id = #{userId} AND status = 0
+        ORDER BY create_time DESC
+    </select>
+
     <!-- 插入订单 -->
     <insert id="insert" parameterType="com.flashsale.order.entity.FlashSaleOrder" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO flash_sale_order (

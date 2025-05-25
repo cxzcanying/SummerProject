@@ -2,15 +2,18 @@ package com.flashsale.product.vo;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
 /**
  * 商品视图对象
+ * @author 21311
  */
 @Data
 public class ProductVO implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

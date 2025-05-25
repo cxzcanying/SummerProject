@@ -98,6 +98,17 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Result<List<FlashSaleOrder>> getUserPendingOrders(Long userId) {
+        try {
+            List<FlashSaleOrder> orders = flashSaleOrderMapper.findPendingOrdersByUserId(userId);
+            return Result.success(orders);
+        } catch (Exception e) {
+            log.error("查询用户待付款订单列表失败", e);
+            return Result.error(ResultCode.ERROR.getCode(), "查询待付款订单列表失败");
+        }
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public Result<Void> payOrder(String orderNo, Integer payType) {
         try {

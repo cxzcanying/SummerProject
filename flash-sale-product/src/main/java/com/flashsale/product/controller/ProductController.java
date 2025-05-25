@@ -26,7 +26,7 @@ public class ProductController {
     /**
      * 添加商品
      */
-    @PostMapping
+    @PostMapping("/create")
     public Result<Void> addProduct(@Valid @RequestBody ProductDTO productDTO) {
         return productService.addProduct(productDTO);
     }
@@ -50,7 +50,7 @@ public class ProductController {
     /**
      * 获取商品详情
      */
-    @GetMapping("/{id}")
+    @GetMapping("/detail/{id}")
     public Result<ProductVO> getProductDetail(@PathVariable Long id) {
         return productService.getProductDetail(id);
     }

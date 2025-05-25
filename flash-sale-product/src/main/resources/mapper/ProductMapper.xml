@@ -7,12 +7,12 @@
         <id column="id" property="id" jdbcType="BIGINT"/>
         <result column="category_id" property="categoryId" jdbcType="BIGINT"/>
         <result column="name" property="name" jdbcType="VARCHAR"/>
-        <result column="description" property="description" jdbcType="VARCHAR"/>
-        <result column="image" property="image" jdbcType="VARCHAR"/>
-        <result column="images" property="images" jdbcType="VARCHAR"/>
+        <result column="subtitle" property="subtitle" jdbcType="VARCHAR"/>
+        <result column="main_image" property="mainImage" jdbcType="VARCHAR"/>
+        <result column="sub_images" property="subImages" jdbcType="VARCHAR"/>
+        <result column="detail" property="detail" jdbcType="VARCHAR"/>
         <result column="price" property="price" jdbcType="DECIMAL"/>
         <result column="stock" property="stock" jdbcType="INTEGER"/>
-        <result column="sold_count" property="soldCount" jdbcType="INTEGER"/>
         <result column="status" property="status" jdbcType="INTEGER"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
@@ -20,7 +20,7 @@
 
     <!-- 基础字段 -->
     <sql id="Base_Column_List">
-        id, category_id, name, description, image, images, price, stock, sold_count, status, create_time, update_time
+        id, category_id, name, subtitle, main_image, sub_images, detail, price, stock, status, create_time, update_time
     </sql>
 
     <!-- 根据ID查找商品 -->
@@ -51,8 +51,8 @@
 
     <!-- 插入商品 -->
     <insert id="insert" parameterType="com.flashsale.product.entity.Product" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO product (category_id, name, description, image, images, price, stock, sold_count, status, create_time, update_time)
-        VALUES (#{categoryId}, #{name}, #{description}, #{image}, #{images}, #{price}, #{stock}, #{soldCount}, #{status}, #{createTime}, #{updateTime})
+        INSERT INTO product (category_id, name, subtitle, main_image, sub_images, detail, price, stock, status, create_time, update_time)
+        VALUES (#{categoryId}, #{name}, #{subtitle}, #{mainImage}, #{subImages}, #{detail}, #{price}, #{stock}, #{status}, #{createTime}, #{updateTime})
     </insert>
 
     <!-- 根据ID更新商品 -->
@@ -61,12 +61,12 @@
         <set>
             <if test="categoryId != null">category_id = #{categoryId},</if>
             <if test="name != null">name = #{name},</if>
-            <if test="description != null">description = #{description},</if>
-            <if test="image != null">image = #{image},</if>
-            <if test="images != null">images = #{images},</if>
+            <if test="subtitle != null">subtitle = #{subtitle},</if>
+            <if test="mainImage != null">main_image = #{mainImage},</if>
+            <if test="subImages != null">sub_images = #{subImages},</if>
+            <if test="detail != null">detail = #{detail},</if>
             <if test="price != null">price = #{price},</if>
             <if test="stock != null">stock = #{stock},</if>
-            <if test="soldCount != null">sold_count = #{soldCount},</if>
             <if test="status != null">status = #{status},</if>
             update_time = #{updateTime}
         </set>
@@ -111,7 +111,7 @@
                 AND category_id = #{categoryId}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND (name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR subtitle LIKE CONCAT('%', #{keyword}, '%'))
             </if>
         </where>
         ORDER BY create_time DESC
@@ -128,7 +128,7 @@
                 AND category_id = #{categoryId}
             </if>
             <if test="keyword != null and keyword != ''">
-                AND (name LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))
+                AND (name LIKE CONCAT('%', #{keyword}, '%') OR subtitle LIKE CONCAT('%', #{keyword}, '%'))
             </if>
         </where>
     </select>

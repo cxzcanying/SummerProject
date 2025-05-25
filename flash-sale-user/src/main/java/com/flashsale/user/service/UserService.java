@@ -3,6 +3,7 @@ package com.flashsale.user.service;
 import com.flashsale.common.result.Result;
 import com.flashsale.user.dto.LoginDTO;
 import com.flashsale.user.dto.UserDTO;
+import com.flashsale.user.vo.LoginVO;
 import com.flashsale.user.vo.UserVO;
 
 /**
@@ -17,7 +18,7 @@ public interface UserService{
      * @param userDTO 用户信息
      * @return 注册结果
      */
-    Result<Void> register(UserDTO userDTO);
+    Result<UserVO> register(UserDTO userDTO);
 
     /**
      * 用户登录
@@ -25,7 +26,7 @@ public interface UserService{
      * @param loginDTO 登录信息
      * @return 登录结果
      */
-    Result<String> login(LoginDTO loginDTO);
+    Result<LoginVO> login(LoginDTO loginDTO);
 
     /**
      * 获取用户信息

@@ -46,8 +46,8 @@ public class ProductServiceImpl implements ProductService {
             BeanUtils.copyProperties(productDTO, product);
             product.setCreateTime(new Date());
             product.setUpdateTime(new Date());
-            product.setSoldCount(0);
-            product.setStatus(1); // 默认上架
+            product.setStatus(1);
+            // 默认上架
 
             int result = productMapper.insert(product);
             if (result > 0) {

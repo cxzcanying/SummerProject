@@ -20,14 +20,9 @@ public class Payment implements Serializable {
     private Long id;
 
     /**
-     * 订单ID
+     * 订单编号
      */
-    private Long orderId;
-
-    /**
-     * 用户ID
-     */
-    private Long userId;
+    private String orderNo;
 
     /**
      * 支付流水号
@@ -35,9 +30,9 @@ public class Payment implements Serializable {
     private String paymentNo;
 
     /**
-     * 第三方支付流水号
+     * 支付方式：1-支付宝，2-微信，3-银行卡
      */
-    private String thirdPartyPaymentNo;
+    private Integer paymentMethod;
 
     /**
      * 支付金额
@@ -45,12 +40,7 @@ public class Payment implements Serializable {
     private BigDecimal amount;
 
     /**
-     * 支付方式：1-支付宝，2-微信，3-银行卡
-     */
-    private Integer paymentMethod;
-
-    /**
-     * 支付状态：0-待支付，1-支付成功，2-支付失败，3-已退款
+     * 支付状态：0-待支付，1-支付成功，2-支付失败
      */
     private Integer status;
 
@@ -68,9 +58,4 @@ public class Payment implements Serializable {
      * 更新时间
      */
     private Date updateTime;
-
-    /**
-     * 备注
-     */
-    private String remark;
 } 

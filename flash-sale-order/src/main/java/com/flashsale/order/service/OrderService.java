@@ -37,6 +37,14 @@ public interface OrderService {
     Result<List<FlashSaleOrder>> getOrdersByUserId(Long userId);
 
     /**
+     * 根据用户ID查询待付款订单列表
+     *
+     * @param userId 用户ID
+     * @return 待付款订单列表
+     */
+    Result<List<FlashSaleOrder>> getUserPendingOrders(Long userId);
+
+    /**
      * 支付订单
      *
      * @param orderNo  订单号

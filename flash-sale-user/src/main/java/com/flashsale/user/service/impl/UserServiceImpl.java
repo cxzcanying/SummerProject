@@ -7,6 +7,7 @@ import com.flashsale.user.dto.UserDTO;
 import com.flashsale.user.entity.User;
 import com.flashsale.user.mapper.UserMapper;
 import com.flashsale.user.service.UserService;
+import com.flashsale.user.vo.LoginVO;
 import com.flashsale.user.vo.UserVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -37,11 +38,12 @@ public class UserServiceImpl implements UserService {
     private RedisTemplate<String, Object> redisTemplate;
 
     private static final String USER_TOKEN_PREFIX = "user:token:";
-    private static final long TOKEN_EXPIRE_TIME = 24 * 60 * 60; // 24小时
+    private static final long TOKEN_EXPIRE_TIME = 24 * 60 * 60;
+    // 24小时
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result<Void> register(UserDTO userDTO) {
+    public Result<UserVO> register(UserDTO userDTO) {
         // 检查用户名是否已存在
         User existUser = userMapper.findByUsername(userDTO.getUsername());
         if (existUser != null) {
@@ -77,11 +79,15 @@ public class UserServiceImpl implements UserService {
             return Result.error(ResultCode.ERROR.getCode(), "注册失败");
         }
 
-        return Result.success();
+        // 构建返回的用户信息
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+
+        return Result.success("注册成功", userVO);
     }
 
     @Override
-    public Result<String> login(LoginDTO loginDTO) {
+    public Result<LoginVO> login(LoginDTO loginDTO) {
         // 查询用户
         User user = userMapper.findByUsername(loginDTO.getUsername());
 
@@ -113,7 +119,13 @@ public class UserServiceImpl implements UserService {
         BeanUtils.copyProperties(user, userVO);
         redisTemplate.opsForValue().set(tokenKey, userVO, TOKEN_EXPIRE_TIME, TimeUnit.SECONDS);
 
-        return Result.success(token);
+        // 构建登录响应对象
+        LoginVO loginVO = new LoginVO();
+        loginVO.setToken(token);
+        loginVO.setUserId(user.getId());
+        loginVO.setUsername(user.getUsername());
+
+        return Result.success("登录成功", loginVO);
     }
 
     @Override
