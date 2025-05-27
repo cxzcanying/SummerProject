@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 支付控制器
@@ -48,7 +49,17 @@ public class PaymentController {
      */
     @GetMapping("/detail/{paymentNo}")
     public Result<PaymentVO> getPaymentDetail(@PathVariable String paymentNo) {
+        log.info("查询支付详情，支付流水号：{}", paymentNo);
         return paymentService.getPaymentDetail(paymentNo);
+    }
+
+    /**
+     * 调试接口 - 查询数据库中的所有支付记录
+     */
+    @GetMapping("/debug/all")
+    public Result<List<PaymentVO>> getAllPayments() {
+        log.info("调试：查询所有支付记录");
+        return paymentService.getAllPaymentsForDebug();
     }
 
     /**
@@ -56,6 +67,7 @@ public class PaymentController {
      */
     @GetMapping("/order/{orderId}")
     public Result<PaymentVO> getPaymentByOrderId(@PathVariable Long orderId) {
+        log.info("查询订单，订单号：{}", orderId);
         return paymentService.getPaymentByOrderId(orderId);
     }
 

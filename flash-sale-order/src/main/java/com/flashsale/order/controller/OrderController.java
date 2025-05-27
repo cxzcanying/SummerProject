@@ -45,15 +45,6 @@ public class OrderController {
         return orderService.getUserPendingOrders(userId);
     }
 
-    /**
-     * 应用优惠券到订单
-     */
-    @PostMapping("/apply-coupon")
-    public Result<Void> applyCoupon(@RequestBody ApplyCouponRequest request) {
-        log.info("订单{}应用优惠券{}", request.getOrderId(), request.getCouponId());
-        // 简化实现
-        return Result.success();
-    }
 
     /**
      * 支付订单

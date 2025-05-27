@@ -1,5 +1,6 @@
 package com.flashsale.common.mq;
 
+import com.flashsale.common.mq.message.PaymentProcessMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -100,6 +101,21 @@ public class MessageSender {
             log.warn("发送死信消息，correlationId: {}, errorReason: {}", correlationId, errorReason);
         } catch (Exception e) {
             log.error("发送死信消息失败，errorReason: {}", errorReason, e);
+        }
+    }
+
+    /**
+     * 发送支付处理消息
+     *
+     * @param paymentProcessMessage 支付处理消息
+     */
+    public void sendPaymentProcessMessage(PaymentProcessMessage paymentProcessMessage) {
+        try {
+            log.info("发送支付处理消息，订单号：{}", paymentProcessMessage.getOrderNo());
+            sendMessage(RabbitMQConfig.PAYMENT_EXCHANGE, RabbitMQConfig.PAYMENT_PROCESS_ROUTING_KEY, paymentProcessMessage);
+        } catch (Exception e) {
+            log.error("发送支付处理消息失败，订单号：{}", paymentProcessMessage.getOrderNo(), e);
+            throw new RuntimeException("发送支付处理消息失败", e);
         }
     }
 

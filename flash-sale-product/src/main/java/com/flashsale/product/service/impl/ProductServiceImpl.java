@@ -39,7 +39,7 @@ public class ProductServiceImpl implements ProductService {
     // 30分钟
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> addProduct(ProductDTO productDTO) {
         try {
             Product product = new Product();
@@ -67,7 +67,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> updateProduct(Long id, ProductDTO productDTO) {
         try {
             Product existProduct = productMapper.findById(id);
@@ -96,7 +96,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> deleteProduct(Long id) {
         try {
             Product existProduct = productMapper.findById(id);
@@ -179,7 +179,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> updateProductStatus(Long id, Integer status) {
         try {
             Product existProduct = productMapper.findById(id);
@@ -208,7 +208,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Boolean> decreaseStock(Long productId, Integer quantity) {
         try {
             // 先检查库存
@@ -243,7 +243,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Boolean> increaseStock(Long productId, Integer quantity) {
         try {
             int result = productMapper.increaseStock(productId, quantity);

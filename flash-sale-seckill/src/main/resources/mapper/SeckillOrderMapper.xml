@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.seckill.mapper.SeckillOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.flashsale.seckill.entity.SeckillOrder">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="activity_id" property="activityId" jdbcType="BIGINT"/>
+        <result column="product_id" property="productId" jdbcType="BIGINT"/>
+        <result column="flash_sale_product_id" property="flashSaleProductId" jdbcType="BIGINT"/>
+        <result column="product_name" property="productName" jdbcType="VARCHAR"/>
+        <result column="product_image" property="productImage" jdbcType="VARCHAR"/>
+        <result column="flash_sale_price" property="flashSalePrice" jdbcType="DECIMAL"/>
+        <result column="quantity" property="quantity" jdbcType="INTEGER"/>
+        <result column="payment_amount" property="paymentAmount" jdbcType="DECIMAL"/>
+        <result column="payment_time" property="paymentTime" jdbcType="TIMESTAMP"/>
+        <result column="payment_type" property="paymentType" jdbcType="INTEGER"/>
+        <result column="transaction_id" property="transactionId" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, order_no, user_id, activity_id, product_id, flash_sale_product_id,
+        product_name, product_image, flash_sale_price, quantity,
+        payment_amount, payment_time, payment_type, transaction_id, status,
+        create_time, update_time
+    </sql>
+
+    <!-- 插入订单 -->
+    <insert id="insert" parameterType="com.flashsale.seckill.entity.SeckillOrder" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO flash_sale_order (
+            order_no, user_id, activity_id, product_id, flash_sale_product_id,
+            product_name, product_image, flash_sale_price, quantity,
+            payment_amount, payment_time, payment_type, transaction_id, status,
+            create_time, update_time
+        )
+        VALUES (
+            #{orderNo}, #{userId}, #{activityId}, #{productId}, #{flashSaleProductId},
+            #{productName}, #{productImage}, #{flashSalePrice}, #{quantity},
+            #{paymentAmount}, #{paymentTime}, #{paymentType}, #{transactionId,jdbcType=VARCHAR}, #{status},
+            #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 根据ID查找订单 -->
+    <select id="findById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_order
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据订单号查找订单 -->
+    <select id="findByOrderNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_order
+        WHERE order_no = #{orderNo}
+    </select>
+
+    <!-- 统计用户购买数量 -->
+    <select id="countUserBought" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM flash_sale_order
+        WHERE user_id = #{userId}
+        AND flash_sale_product_id = #{flashSaleProductId}
+        AND status IN (1, 3) -- 已支付或已完成的订单
+    </select>
+
+    <!-- 更新订单状态 -->
+    <update id="updateStatus">
+        UPDATE flash_sale_order
+        SET status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper> 

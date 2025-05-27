@@ -13,26 +13,23 @@
         <result column="flash_sale_product_id" property="flashSaleProductId"/>
         <result column="product_name" property="productName"/>
         <result column="product_image" property="productImage"/>
-        <result column="original_price" property="originalPrice"/>
         <result column="flash_sale_price" property="flashSalePrice"/>
         <result column="quantity" property="quantity"/>
-        <result column="coupon_id" property="couponId"/>
-        <result column="discount_amount" property="discountAmount"/>
-        <result column="pay_amount" property="payAmount"/>
+        <result column="payment_amount" property="paymentAmount"/>
+        <result column="payment_time" property="paymentTime"/>
+        <result column="payment_type" property="paymentType"/>
+        <result column="transaction_id" property="transactionId"/>
         <result column="status" property="status"/>
-        <result column="pay_type" property="payType"/>
-        <result column="pay_time" property="payTime"/>
-        <result column="expire_time" property="expireTime"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
     </resultMap>
 
     <!-- Base Column List -->
-    <sql id="baseColumns">select
+    <sql id="baseColumns">
         id, order_no, user_id, activity_id, product_id, flash_sale_product_id,
-        product_name, product_image, original_price, flash_sale_price, quantity,
-        coupon_id, discount_amount, pay_amount, status, pay_type, pay_time,
-        expire_time, create_time, update_time from flash_sale_order
+        product_name, product_image, flash_sale_price, quantity,
+        payment_amount, payment_time, payment_type, transaction_id, status,
+        create_time, update_time
     </sql>
 
     <!-- 根据ID查找订单 -->
@@ -69,14 +66,14 @@
     <insert id="insert" parameterType="com.flashsale.order.entity.FlashSaleOrder" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO flash_sale_order (
             order_no, user_id, activity_id, product_id, flash_sale_product_id,
-            product_name, product_image, original_price, flash_sale_price, quantity,
-            coupon_id, discount_amount, pay_amount, status, pay_type, pay_time,
-            expire_time, create_time, update_time
+            product_name, product_image, flash_sale_price, quantity,
+            payment_amount, payment_time, payment_type, transaction_id, status,
+            create_time, update_time
         ) VALUES (
             #{orderNo}, #{userId}, #{activityId}, #{productId}, #{flashSaleProductId},
-            #{productName}, #{productImage}, #{originalPrice}, #{flashSalePrice}, #{quantity},
-            #{couponId}, #{discountAmount}, #{payAmount}, #{status}, #{payType}, #{payTime},
-            #{expireTime}, #{createTime}, #{updateTime}
+            #{productName}, #{productImage}, #{flashSalePrice}, #{quantity},
+            #{paymentAmount}, #{paymentTime}, #{paymentType}, #{transactionId}, #{status},
+            #{createTime}, #{updateTime}
         )
     </insert>
 
@@ -90,16 +87,13 @@
             flash_sale_product_id = #{flashSaleProductId},
             product_name = #{productName},
             product_image = #{productImage},
-            original_price = #{originalPrice},
             flash_sale_price = #{flashSalePrice},
             quantity = #{quantity},
-            coupon_id = #{couponId},
-            discount_amount = #{discountAmount},
-            pay_amount = #{payAmount},
+            payment_amount = #{paymentAmount},
+            payment_time = #{paymentTime},
+            payment_type = #{paymentType},
+            transaction_id = #{transactionId},
             status = #{status},
-            pay_type = #{payType},
-            pay_time = #{payTime},
-            expire_time = #{expireTime},
             update_time = #{updateTime}
         WHERE id = #{id}
     </update>

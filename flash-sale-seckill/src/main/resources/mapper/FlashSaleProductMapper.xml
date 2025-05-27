@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.seckill.mapper.FlashSaleProductMapper">
+
+    <resultMap id="BaseResultMap" type="com.flashsale.seckill.entity.FlashSaleProduct">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="activity_id" property="activityId" jdbcType="BIGINT"/>
+        <result column="product_id" property="productId" jdbcType="BIGINT"/>
+        <result column="flash_sale_price" property="flashSalePrice" jdbcType="DECIMAL"/>
+        <result column="flash_sale_stock" property="flashSaleStock" jdbcType="INTEGER"/>
+        <result column="flash_sale_limit" property="flashSaleLimit" jdbcType="INTEGER"/>
+        <result column="stock_used" property="stockUsed" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, activity_id, product_id, flash_sale_price, flash_sale_stock, flash_sale_limit, 
+        stock_used, status, create_time, update_time
+    </sql>
+
+    <!-- 插入商品 -->
+    <insert id="insert" parameterType="com.flashsale.seckill.entity.FlashSaleProduct" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO flash_sale_product (
+            activity_id, product_id, flash_sale_price, flash_sale_stock, 
+            flash_sale_limit, stock_used, status, create_time, update_time
+        )
+        VALUES (
+            #{activityId}, #{productId}, #{flashSalePrice}, #{flashSaleStock},
+            #{flashSaleLimit}, #{stockUsed}, #{status}, #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <!-- 根据ID查找商品 -->
+    <select id="findById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_product
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据活动ID查找商品列表 -->
+    <select id="findByActivityId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_product
+        WHERE activity_id = #{activityId}
+    </select>
+
+    <!-- 分页查询商品列表 -->
+    <select id="findByPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_product
+        <where>
+            <if test="activityId != null">
+                AND activity_id = #{activityId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        `LIMIT` #{offset}, #{size}
+    </select>
+
+    <!-- 统计商品总数 -->
+    <select id="countProducts" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM flash_sale_product
+        <where>
+            <if test="activityId != null">
+                AND activity_id = #{activityId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 更新商品 -->
+    <update id="updateById" parameterType="com.flashsale.seckill.entity.FlashSaleProduct">
+        UPDATE flash_sale_product
+        <set>
+            <if test="flashSalePrice != null">
+                flash_sale_price = #{flashSalePrice},
+            </if>
+            <if test="flashSaleStock != null">
+                flash_sale_stock = #{flashSaleStock},
+            </if>
+            <if test="flashSaleLimit != null">
+                flash_sale_limit = #{flashSaleLimit},
+            </if>
+            <if test="stockUsed != null">
+                stock_used = #{stockUsed},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新商品状态 -->
+    <update id="updateStatus">
+        UPDATE flash_sale_product
+        SET status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 扣减库存 -->
+    <update id="decreaseStock">
+        UPDATE flash_sale_product
+        SET stock_used = stock_used + #{quantity},
+            update_time = NOW()
+        WHERE id = #{id}
+        AND flash_sale_stock >= stock_used + #{quantity}
+    </update>
+
+    <!-- 增加已售数量 -->
+    <update id="increaseStockUsed">
+        UPDATE flash_sale_product
+        SET stock_used = stock_used + #{quantity},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询正在进行的秒杀商品 -->
+    <select id="findActiveProducts" resultMap="BaseResultMap">
+        SELECT p.*
+        FROM flash_sale_product p
+        JOIN flash_sale_activity a ON p.activity_id = a.id
+        WHERE p.status = 1
+        AND a.status = 1
+        AND a.start_time &lt;= NOW()
+        AND a.end_time &gt;= NOW()
+    </select>
+
+    <!-- 查询即将开始的商品 -->
+    <select id="findUpcomingProducts" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_product
+        WHERE status = 1
+        AND flash_sale_stock > stock_used
+    </select>
+
+</mapper> 

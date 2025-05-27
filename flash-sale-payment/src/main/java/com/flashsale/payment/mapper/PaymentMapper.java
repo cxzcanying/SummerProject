@@ -4,6 +4,8 @@ import com.flashsale.payment.entity.Payment;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
+
 /**
  * 支付Mapper接口
  * @author 21311
@@ -32,6 +34,11 @@ public interface PaymentMapper {
     Payment findByPaymentNo(@Param("paymentNo") String paymentNo);
 
     /**
+     * 根据订单ID查找支付记录
+     */
+    Payment findByOrderId(@Param("orderId") Long orderId);
+
+    /**
      * 根据ID更新支付记录
      */
     int updateById(Payment payment);
@@ -40,4 +47,25 @@ public interface PaymentMapper {
      * 更新支付状态
      */
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
-} 
+
+    /**
+     * 更新支付信息
+     */
+    int updatePaymentInfo(@Param("id") Long id, @Param("thirdPartyPaymentNo") String thirdPartyPaymentNo, @Param("status") Integer status);
+
+    /**
+     * 分页查询用户支付记录
+     */
+    List<Payment> findByUserIdWithPage(@Param("userId") Long userId, @Param("offset") Integer offset, @Param("size") Integer size);
+
+    /**
+     * 统计用户支付记录总数
+     */
+    Long countByUserId(@Param("userId") Long userId);
+
+    /**
+     * 调试方法 - 查询所有支付记录
+     */
+    List<Payment> findAllForDebug();
+
+}

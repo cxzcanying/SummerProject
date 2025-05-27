@@ -48,6 +48,13 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 添加日志配置
+logging:
+  level:
+    com.flashsale.payment: debug
+    com.flashsale.payment.mapper: debug
 
 management:
   endpoints:

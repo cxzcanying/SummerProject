@@ -7,6 +7,7 @@ import com.flashsale.payment.dto.PaymentDTO;
 import com.flashsale.payment.vo.PaymentVO;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 支付服务接口
@@ -84,4 +85,11 @@ public interface PaymentService {
      * @return 取消结果
      */
     Result<Void> cancelPayment(String paymentNo);
+
+    /**
+     * 调试方法 - 获取所有支付记录
+     * 
+     * @return 所有支付记录
+     */
+    Result<List<PaymentVO>> getAllPaymentsForDebug();
 } 

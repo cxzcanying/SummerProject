@@ -24,7 +24,6 @@
         <module>flash-sale-seckill</module>
         <module>flash-sale-order</module>
         <module>flash-sale-payment</module>
-        <module>flash-sale-coupon</module>
     </modules>
     
     <properties>

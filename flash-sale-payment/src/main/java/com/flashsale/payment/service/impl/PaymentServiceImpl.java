@@ -36,10 +36,11 @@ public class PaymentServiceImpl implements PaymentService {
     private RedisTemplate<String, Object> redisTemplate;
 
     private static final String PAYMENT_CACHE_KEY = "payment:";
-    private static final long CACHE_EXPIRE_TIME = 30; // 30分钟
+    private static final long CACHE_EXPIRE_TIME = 30;
+    // 30分钟
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentVO> createPayment(PaymentDTO paymentDTO) {
         try {
             // 检查订单是否已有支付记录
@@ -51,8 +52,13 @@ public class PaymentServiceImpl implements PaymentService {
             // 创建支付记录
             Payment payment = new Payment();
             BeanUtils.copyProperties(paymentDTO, payment);
+            
+            // 生成订单号 - 实际使用中应该通过Feign调用OrderService获取真实的orderNo
+            payment.setOrderNo("FS" + System.currentTimeMillis() + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+            
             payment.setPaymentNo(generatePaymentNo());
-            payment.setStatus(0); // 待支付
+            payment.setStatus(0);
+            // 待支付
             payment.setCreateTime(new Date());
             payment.setUpdateTime(new Date());
 
@@ -74,7 +80,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> handlePaymentCallback(String paymentNo, String thirdPartyPaymentNo, Integer status) {
         try {
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
@@ -113,26 +119,61 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Result<PaymentVO> getPaymentDetail(String paymentNo) {
+        log.info("开始查询支付详情，支付流水号：{}", paymentNo);
         try {
             // 先从缓存获取
+            log.info("尝试从缓存获取支付信息，支付流水号：{}", paymentNo);
             PaymentVO paymentVO = getPaymentFromCache(paymentNo);
             if (paymentVO != null) {
+                log.info("从缓存获取支付信息成功，支付流水号：{}", paymentNo);
                 return Result.success(paymentVO);
             }
 
-            // 从数据库获取
+            // 直接尝试不同的查询方式
+            log.info("缓存中不存在，尝试从数据库获取支付信息，支付流水号：{}", paymentNo);
+            
+            // 先尝试通过 subject 字段查询
+            log.info("尝试通过 subject 字段查询");
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
+            if (payment != null) {
+                log.info("通过 subject 字段查询成功，订单号：{}", payment.getOrderNo());
+            } else {
+                log.warn("通过 subject 字段查询失败，尝试其他方式");
+                
+                // 尝试通过订单号查询
+                log.info("尝试查询所有订单，查看是否有匹配的支付记录");
+                List<Payment> allPayments = paymentMapper.findAllForDebug();
+                log.info("数据库中共有 {} 条支付记录", allPayments != null ? allPayments.size() : 0);
+                
+                if (allPayments != null && !allPayments.isEmpty()) {
+                    // 遍历所有记录，查看是否有匹配的支付流水号
+                    for (Payment p : allPayments) {
+                        log.info("支付记录: ID={}, 订单号={}, 流水号={}, 第三方流水号={}", 
+                                p.getId(), p.getOrderNo(), p.getPaymentNo(), p.getThirdPartyPaymentNo());
+                        
+                        // 检查是否有匹配的记录
+                        if (paymentNo.equals(p.getPaymentNo())) {
+                            log.info("找到匹配的支付流水号记录");
+                            payment = p;
+                            break;
+                        }
+                    }
+                }
+            }
+            
             if (payment == null) {
+                log.warn("支付记录不存在，支付流水号：{}", paymentNo);
                 return Result.error("支付记录不存在");
             }
 
+            log.info("从数据库获取支付信息成功，支付流水号：{}，订单号：{}", paymentNo, payment.getOrderNo());
             paymentVO = convertToVO(payment);
             // 缓存支付信息
             cachePayment(payment);
 
             return Result.success(paymentVO);
         } catch (Exception e) {
-            log.error("获取支付详情异常", e);
+            log.error("获取支付详情异常，支付流水号：{}", paymentNo, e);
             return Result.error("获取支付详情失败：" + e.getMessage());
         }
     }
@@ -180,7 +221,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> applyRefund(String paymentNo, BigDecimal refundAmount, String refundReason) {
         try {
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
@@ -218,7 +259,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> handleRefundCallback(String refundNo, Integer status) {
         try {
             // 这里处理退款回调逻辑
@@ -231,7 +272,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> cancelPayment(String paymentNo) {
         try {
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
@@ -363,6 +404,32 @@ public class PaymentServiceImpl implements PaymentService {
             redisTemplate.delete(key);
         } catch (Exception e) {
             log.error("删除支付缓存失败", e);
+        }
+    }
+    
+    @Override
+    public Result<List<PaymentVO>> getAllPaymentsForDebug() {
+        try {
+            log.info("调试：开始查询所有支付记录");
+            
+            // 直接查询数据库中的所有记录
+            List<Payment> allPayments = paymentMapper.findAllForDebug();
+            
+            log.info("调试：查询到 {} 条支付记录", allPayments != null ? allPayments.size() : 0);
+            
+            if (allPayments == null || allPayments.isEmpty()) {
+                return Result.error("没有找到任何支付记录");
+            }
+            
+            // 转换为VO列表
+            List<PaymentVO> result = allPayments.stream()
+                    .map(this::convertToVO)
+                    .collect(Collectors.toList());
+            
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("调试：查询所有支付记录异常", e);
+            return Result.error("查询失败：" + e.getMessage());
         }
     }
 } 

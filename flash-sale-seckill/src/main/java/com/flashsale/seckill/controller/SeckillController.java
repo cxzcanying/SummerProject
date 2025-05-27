@@ -2,12 +2,26 @@ package com.flashsale.seckill.controller;
 
 import com.flashsale.common.dto.SeckillDTO;
 import com.flashsale.common.result.Result;
+import com.flashsale.common.result.PageResult;
+import com.flashsale.seckill.dto.FlashSaleActivityDTO;
+import com.flashsale.seckill.dto.FlashSaleProductDTO;
+import com.flashsale.seckill.service.FlashSaleActivityService;
+import com.flashsale.seckill.service.FlashSaleProductService;
+import com.flashsale.seckill.service.RateLimitService;
 import com.flashsale.seckill.service.SeckillService;
+import com.flashsale.seckill.vo.FlashSaleActivityVO;
+import com.flashsale.seckill.vo.FlashSaleProductVO;
+import com.flashsale.seckill.vo.SeckillOrderVO;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.List;
 
 /**
  * 秒杀控制器
@@ -21,12 +35,29 @@ public class SeckillController {
     @Autowired
     private SeckillService seckillService;
 
+    @Autowired
+    private FlashSaleActivityService activityService;
+
+    @Autowired
+    private FlashSaleProductService productService;
+    
+    @Autowired
+    private RateLimitService rateLimitService;
+
     /**
      * 提交秒杀请求
      */
     @PostMapping("/submit")
-    public Result<String> doSeckill(@RequestBody @Valid SeckillDTO seckillDTO) {
+    public Result<String> doSeckill(@RequestBody @Valid SeckillDTO seckillDTO, HttpServletRequest request) {
         log.info("用户{}执行秒杀，商品ID：{}", seckillDTO.getUserId(), seckillDTO.getFlashSaleProductId());
+        
+        // 限流检查
+        String key = "seckill:" + seckillDTO.getUserId() + ":" + seckillDTO.getFlashSaleProductId();
+        Result<Boolean> allowResult = rateLimitService.isAllowed(key, 5, 60);
+        if (!allowResult.getData()) {
+            return Result.error("访问过于频繁，请稍后再试");
+        }
+        
         return seckillService.doSeckill(seckillDTO);
     }
 
@@ -36,8 +67,7 @@ public class SeckillController {
     @GetMapping("/result/{seckillId}")
     public Result<String> getSeckillResult(@PathVariable String seckillId) {
         log.info("查询秒杀结果: {}", seckillId);
-        // 简化实现，实际应该查询订单状态
-        return Result.success("SUCCESS");
+        return seckillService.getSeckillResult(seckillId);
     }
 
     /**
@@ -45,84 +75,152 @@ public class SeckillController {
      */
     @PostMapping("/token/generate")
     public Result<String> generateSeckillToken(@RequestBody SeckillTokenRequest tokenRequest) {
-        log.info("为用户{}生成秒杀令牌，活动ID：{}", tokenRequest.getUserId(), tokenRequest.getActivityId());
-        return seckillService.generateSeckillToken(tokenRequest.getUserId(), tokenRequest.getActivityId());
+        log.info("为用户{}生成秒杀令牌，商品ID：{}", tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
+        return seckillService.generateSeckillToken(tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
     }
 
     /**
      * 创建秒杀活动
      */
     @PostMapping("/activity/create")
-    public Result<Void> createSeckillActivity(@RequestBody SeckillActivityDTO activityDTO) {
-        log.info("创建秒杀活动: {}", activityDTO.getActivityName());
-        // 简化实现
-        return Result.success();
+    public Result<Void> createSeckillActivity(@RequestBody @Valid FlashSaleActivityDTO activityDTO) {
+        log.info("创建秒杀活动: {}", activityDTO.getName());
+        return activityService.createActivity(activityDTO);
     }
-
+    
     /**
      * 查询秒杀活动列表
      */
     @GetMapping("/activity/list")
-    public Result<Object> listSeckillActivities(@RequestParam(defaultValue = "1") Integer page,
-                                               @RequestParam(defaultValue = "10") Integer size) {
+    public Result<PageResult<FlashSaleActivityVO>> listSeckillActivities(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) Integer status) {
         log.info("查询秒杀活动列表，页码：{}，大小：{}", page, size);
-        // 简化实现
-        return Result.success(null);
+        return activityService.listActivities(page, size, status);
     }
 
     /**
-     * 检查用户秒杀资格
+     * 获取活动详情
+     */
+    @GetMapping("/activity/detail/{id}")
+    public Result<FlashSaleActivityVO> getActivityDetail(@PathVariable Long id) {
+        log.info("获取活动详情，活动ID：{}", id);
+        return activityService.getActivityDetail(id);
+    }
+
+    /**
+     * 启动活动
+     */
+    @PostMapping("/activity/{id}/start")
+    public Result<Void> startActivity(@PathVariable Long id) {
+        log.info("启动秒杀活动，活动ID：{}", id);
+        return activityService.startActivity(id);
+    }
+
+    /**
+     * 停止活动
+     */
+    @PostMapping("/activity/{id}/stop")
+    public Result<Void> stopActivity(@PathVariable Long id) {
+        log.info("停止秒杀活动，活动ID：{}", id);
+        return activityService.stopActivity(id);
+    }
+
+    /**
+     * 添加秒杀商品
+     */
+    @PostMapping("/product/create")
+    public Result<Void> addSeckillProduct(@RequestBody @Valid FlashSaleProductDTO productDTO) {
+        log.info("添加秒杀商品，商品ID：{}", productDTO.getProductId());
+        return productService.addProduct(productDTO);
+    }
+    
+    /**
+     * 获取商品详情
+     */
+    @GetMapping("/product/detail/{id}")
+    public Result<FlashSaleProductVO> getProductDetail(@PathVariable Long id) {
+        log.info("获取商品详情，商品ID：{}", id);
+        return productService.getProductDetail(id);
+    }
+    
+    /**
+     * 获取活动商品列表
+     */
+    @GetMapping("/product/list")
+    public Result<List<FlashSaleProductVO>> getProductsByActivityId(@RequestParam Long activityId) {
+        log.info("获取活动商品列表，活动ID：{}", activityId);
+        return productService.getProductsByActivityId(activityId);
+    }
+    
+    /**
+     * 检查用户是否可以参与秒杀
      */
     @GetMapping("/check/{userId}/{flashSaleProductId}")
-    public Result<Boolean> checkSeckillEligibility(@PathVariable Long userId, 
-                                                   @PathVariable Long flashSaleProductId) {
-        log.info("检查用户{}秒杀资格，商品ID：{}", userId, flashSaleProductId);
+    public Result<Boolean> checkSeckillEligibility(
+            @PathVariable Long userId, 
+            @PathVariable Long flashSaleProductId) {
+        log.info("检查用户{}是否可以参与商品{}的秒杀", userId, flashSaleProductId);
         return seckillService.checkSeckillEligibility(userId, flashSaleProductId);
     }
-
+    
     /**
-     * 预热秒杀商品
+     * 预热秒杀数据
      */
     @PostMapping("/preload/{activityId}")
     public Result<Void> preloadSeckillProducts(@PathVariable Long activityId) {
-        log.info("预热活动{}的秒杀商品", activityId);
+        log.info("预热秒杀数据，活动ID：{}", activityId);
         return seckillService.preloadSeckillProducts(activityId);
     }
-
+    
     /**
-     * 获取秒杀商品库存
+     * 获取秒杀库存
      */
     @GetMapping("/stock/{flashSaleProductId}")
     public Result<Integer> getSeckillStock(@PathVariable Long flashSaleProductId) {
+        log.info("获取秒杀库存，商品ID：{}", flashSaleProductId);
         return seckillService.getSeckillStock(flashSaleProductId);
     }
-
-    // 内部类定义
-    public static class SeckillTokenRequest {
-        private Long activityId;
-        private Long userId;
-        
-        // getters and setters
-        public Long getActivityId() { return activityId; }
-        public void setActivityId(Long activityId) { this.activityId = activityId; }
-        public Long getUserId() { return userId; }
-        public void setUserId(Long userId) { this.userId = userId; }
+    
+    /**
+     * 获取用户秒杀订单
+     */
+    @GetMapping("/order/user/{userId}")
+    public Result<PageResult<SeckillOrderVO>> getUserSeckillOrders(
+            @PathVariable Long userId,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        log.info("获取用户秒杀订单，用户ID：{}", userId);
+        return seckillService.getUserSeckillOrders(userId, status, page, size);
+    }
+    
+    /**
+     * 支付秒杀订单
+     */
+    @PostMapping("/order/{orderNo}/pay")
+    public Result<String> paySeckillOrder(
+            @RequestParam Long userId,
+            @PathVariable String orderNo,
+            @RequestParam Integer payType) {
+        log.info("支付秒杀订单，用户ID：{}，订单号：{}", userId, orderNo);
+        return seckillService.paySeckillOrder(userId, orderNo, payType);
+    }
+    
+    /**
+     * 获取订单详情
+     */
+    @GetMapping("/order/{orderNo}")
+    public Result<SeckillOrderVO> getSeckillOrderDetail(@PathVariable String orderNo) {
+        log.info("获取订单详情，订单号：{}", orderNo);
+        return seckillService.getSeckillOrderDetail(orderNo);
     }
 
-    public static class SeckillActivityDTO {
-        private String activityName;
-        private Long productId;
-        private String startTime;
-        private String endTime;
-        
-        // getters and setters
-        public String getActivityName() { return activityName; }
-        public void setActivityName(String activityName) { this.activityName = activityName; }
-        public Long getProductId() { return productId; }
-        public void setProductId(Long productId) { this.productId = productId; }
-        public String getStartTime() { return startTime; }
-        public void setStartTime(String startTime) { this.startTime = startTime; }
-        public String getEndTime() { return endTime; }
-        public void setEndTime(String endTime) { this.endTime = endTime; }
+    @Setter
+    @Getter
+    public static class SeckillTokenRequest {
+        private Long flashSaleProductId;
+        private Long userId;
     }
 } 

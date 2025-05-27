@@ -1,4 +1,4 @@
-package com.flashsale.order.entity;
+package com.flashsale.seckill.entity;
 
 import lombok.Data;
 
@@ -11,7 +11,7 @@ import java.util.Date;
  * @author 21311
  */
 @Data
-public class FlashSaleOrder implements Serializable {
+public class SeckillOrder implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
@@ -98,4 +98,37 @@ public class FlashSaleOrder implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+
+    // 兼容字段，用于与老代码兼容，但不会保存到数据库
+    // 在DTO转换等处理中保留这些字段以避免NPE
+    
+    /**
+     * 原价（兼容字段）
+     */
+    private transient BigDecimal originalPrice;
+    
+    /**
+     * 实付金额（兼容字段）
+     */
+    private transient BigDecimal payAmount;
+    
+    /**
+     * 支付方式（兼容字段）
+     */
+    private transient Integer payType;
+    
+    /**
+     * 支付时间（兼容字段）
+     */
+    private transient Date payTime;
+    
+    /**
+     * 优惠金额（兼容字段）
+     */
+    private transient BigDecimal discountAmount;
+    
+    /**
+     * 过期时间（兼容字段）
+     */
+    private transient Date expireTime;
 } 

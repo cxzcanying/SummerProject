@@ -4,24 +4,33 @@
 
     <resultMap id="BaseResultMap" type="com.flashsale.payment.entity.Payment">
         <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="order_id" property="orderId" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
         <result column="order_no" property="orderNo" jdbcType="VARCHAR"/>
-        <result column="pay_no" property="paymentNo" jdbcType="VARCHAR"/>
-        <result column="pay_type" property="paymentMethod" jdbcType="INTEGER"/>
-        <result column="pay_amount" property="amount" jdbcType="DECIMAL"/>
-        <result column="pay_status" property="status" jdbcType="INTEGER"/>
-        <result column="pay_time" property="paymentTime" jdbcType="TIMESTAMP"/>
+        <result column="transaction_id" property="thirdPartyPaymentNo" jdbcType="VARCHAR"/>
+        <result column="payment_type" property="paymentMethod" jdbcType="INTEGER"/>
+        <result column="total_amount" property="amount" jdbcType="DECIMAL"/>
+        <result column="subject" property="paymentNo" jdbcType="VARCHAR"/>
+        <result column="payment_status" property="status" jdbcType="INTEGER"/>
+        <result column="callback_time" property="paymentTime" jdbcType="TIMESTAMP"/>
+        <result column="callback_content" property="callbackContent" jdbcType="VARCHAR"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, order_no, pay_no, pay_type, pay_amount, pay_status, pay_time, create_time, update_time
+        id, order_id, user_id, order_no, transaction_id, payment_type, total_amount, subject, payment_status, callback_time, callback_content, create_time, update_time
     </sql>
 
     <!-- 插入支付记录 -->
     <insert id="insert" parameterType="com.flashsale.payment.entity.Payment" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO payment_info (order_no, pay_no, pay_type, pay_amount, pay_status, pay_time, create_time, update_time)
-        VALUES (#{orderNo}, #{paymentNo}, #{paymentMethod}, #{amount}, #{status}, #{paymentTime}, #{createTime}, #{updateTime})
+        INSERT INTO payment_info (
+            order_id, user_id, order_no, transaction_id, payment_type, 
+            total_amount, subject, payment_status, callback_time, callback_content, create_time, update_time
+        ) VALUES (
+            #{orderId}, #{userId}, #{orderNo}, #{thirdPartyPaymentNo}, #{paymentMethod}, 
+            #{amount}, #{paymentNo}, #{status}, #{paymentTime}, #{callbackContent}, #{createTime}, #{updateTime}
+        )
     </insert>
 
     <!-- 根据ID查找支付记录 -->
@@ -47,19 +56,33 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM payment_info
-        WHERE pay_no = #{paymentNo}
+        WHERE subject = #{paymentNo}
+    </select>
+
+    <!-- 根据订单ID查找支付记录 -->
+    <select id="findByOrderId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment_info
+        WHERE order_id = #{orderId}
+        ORDER BY create_time DESC
+        LIMIT 1
     </select>
 
     <!-- 根据ID更新支付记录 -->
     <update id="updateById" parameterType="com.flashsale.payment.entity.Payment">
         UPDATE payment_info
         <set>
+            <if test="orderId != null">order_id = #{orderId},</if>
+            <if test="userId != null">user_id = #{userId},</if>
             <if test="orderNo != null">order_no = #{orderNo},</if>
-            <if test="paymentNo != null">pay_no = #{paymentNo},</if>
-            <if test="paymentMethod != null">pay_type = #{paymentMethod},</if>
-            <if test="amount != null">pay_amount = #{amount},</if>
-            <if test="status != null">pay_status = #{status},</if>
-            <if test="paymentTime != null">pay_time = #{paymentTime},</if>
+            <if test="paymentNo != null">subject = #{paymentNo},</if>
+            <if test="thirdPartyPaymentNo != null">transaction_id = #{thirdPartyPaymentNo},</if>
+            <if test="paymentMethod != null">payment_type = #{paymentMethod},</if>
+            <if test="amount != null">total_amount = #{amount},</if>
+            <if test="status != null">payment_status = #{status},</if>
+            <if test="paymentTime != null">callback_time = #{paymentTime},</if>
+            <if test="callbackContent != null">callback_content = #{callbackContent},</if>
             update_time = #{updateTime}
         </set>
         WHERE id = #{id}
@@ -68,8 +91,41 @@
     <!-- 更新支付状态 -->
     <update id="updateStatus">
         UPDATE payment_info
-        SET pay_status = #{status}, update_time = NOW()
+        SET payment_status = #{status}, update_time = NOW()
         WHERE id = #{id}
     </update>
+
+    <!-- 更新支付信息 -->
+    <update id="updatePaymentInfo">
+        UPDATE payment_info
+        SET transaction_id = #{thirdPartyPaymentNo}, payment_status = #{status}, callback_content = #{callbackContent}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 分页查询用户支付记录 -->
+    <select id="findByUserIdWithPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment_info
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计用户支付记录总数 -->
+    <select id="countByUserId" parameterType="java.lang.Long" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM payment_info
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 调试方法 - 查询所有支付记录 -->
+    <select id="findAllForDebug" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM payment_info
+        ORDER BY create_time DESC
+        LIMIT 100
+    </select>
 
 </mapper> 

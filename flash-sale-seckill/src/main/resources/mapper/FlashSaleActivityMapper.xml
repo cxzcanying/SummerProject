@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.flashsale.seckill.mapper.FlashSaleActivityMapper">
+
+    <resultMap id="BaseResultMap" type="com.flashsale.seckill.entity.FlashSaleActivity">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="description" property="description" jdbcType="VARCHAR"/>
+        <result column="start_time" property="startTime" jdbcType="TIMESTAMP"/>
+        <result column="end_time" property="endTime" jdbcType="TIMESTAMP"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, name, description, start_time, end_time, status, create_time, update_time
+    </sql>
+
+    <!-- 插入秒杀活动 -->
+    <insert id="insert" parameterType="com.flashsale.seckill.entity.FlashSaleActivity" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO flash_sale_activity (name, description, start_time, end_time, status, create_time, update_time)
+        VALUES (#{name}, #{description}, #{startTime}, #{endTime}, #{status}, #{createTime}, #{updateTime})
+    </insert>
+
+    <!-- 根据ID查找活动 -->
+    <select id="findById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_activity
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据ID更新活动 -->
+    <update id="updateById" parameterType="com.flashsale.seckill.entity.FlashSaleActivity">
+        UPDATE flash_sale_activity
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="status != null">status = #{status},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除活动 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM flash_sale_activity WHERE id = #{id}
+    </delete>
+
+    <!-- 分页查询活动列表 -->
+    <select id="findByPage" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_activity
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <!-- 统计活动总数 -->
+    <select id="countActivities" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM flash_sale_activity
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 更新活动状态 -->
+    <update id="updateStatus">
+        UPDATE flash_sale_activity
+        SET status = #{status}, update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询正在进行的活动 -->
+    <select id="findActiveActivities" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_activity
+        WHERE status = 1 
+        AND start_time &lt;= NOW() 
+        AND end_time > NOW()
+        ORDER BY start_time
+    </select>
+
+    <!-- 查询即将开始的活动 -->
+    <select id="findUpcomingActivities" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_activity
+        WHERE status = 0 
+        AND start_time > NOW()
+        ORDER BY start_time
+    </select>
+
+</mapper> 

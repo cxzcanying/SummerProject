@@ -3,19 +3,25 @@ package com.flashsale.order.service.impl;
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.ResultCode;
 import com.flashsale.common.dto.SeckillDTO;
+import com.flashsale.common.mq.MessageSender;
+import com.flashsale.common.mq.message.PaymentProcessMessage;
+import com.flashsale.common.mq.RabbitMQConfig;
 import com.flashsale.order.entity.FlashSaleOrder;
 import com.flashsale.order.mapper.FlashSaleOrderMapper;
 import com.flashsale.order.service.OrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 订单服务实现类
@@ -27,6 +33,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private FlashSaleOrderMapper flashSaleOrderMapper;
+    
+    @Autowired
+    private MessageSender messageSender;
+
+    @Autowired
+    @Qualifier("orderRabbitTemplate")
+    private RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -43,19 +56,15 @@ public class OrderServiceImpl implements OrderService {
             // 这里应该调用商品服务获取商品信息，简化处理
             order.setProductName("秒杀商品");
             order.setProductImage("default.jpg");
-            order.setOriginalPrice(new BigDecimal("99.99"));
             order.setFlashSalePrice(new BigDecimal("9.99"));
-            order.setPayAmount(order.getFlashSalePrice().multiply(new BigDecimal(order.getQuantity())));
+            
+            // 计算支付金额
+            order.setPaymentAmount(order.getFlashSalePrice().multiply(new BigDecimal(order.getQuantity())));
             
             // 设置订单状态
             order.setStatus(0); // 待支付
             order.setCreateTime(new Date());
             order.setUpdateTime(new Date());
-            
-            // 设置过期时间（30分钟后）
-            Calendar calendar = Calendar.getInstance();
-            calendar.add(Calendar.MINUTE, 30);
-            order.setExpireTime(calendar.getTime());
             
             // 保存订单
             int rows = flashSaleOrderMapper.insert(order);
@@ -121,22 +130,50 @@ public class OrderServiceImpl implements OrderService {
                 return Result.error(ResultCode.ORDER_STATUS_ERROR.getCode(), "订单状态错误");
             }
             
-            // 检查是否过期
-            if (new Date().after(order.getExpireTime())) {
-                // 自动取消过期订单
-                flashSaleOrderMapper.updateStatus(order.getId(), 2);
-                return Result.error(ResultCode.ORDER_EXPIRED.getCode(), "订单已过期");
+            // 检查订单是否超过30分钟
+            if (order.getCreateTime() != null) {
+                Date expireTime = new Date(order.getCreateTime().getTime() + 30 * 60 * 1000);
+                if (new Date().after(expireTime)) {
+                    // 自动取消过期订单
+                    flashSaleOrderMapper.updateStatus(order.getId(), 4); // 已取消
+                    return Result.error(ResultCode.ORDER_EXPIRED.getCode(), "订单已过期");
+                }
             }
             
             // 更新订单状态为已支付
             order.setStatus(1);
-            order.setPayType(payType);
-            order.setPayTime(new Date());
+            order.setPaymentType(payType);
+            order.setPaymentTime(new Date());
             order.setUpdateTime(new Date());
+            
+            // 生成支付平台交易ID
+            order.setTransactionId("PAY" + System.currentTimeMillis());
             
             int rows = flashSaleOrderMapper.updateById(order);
             if (rows != 1) {
                 return Result.error(ResultCode.ERROR.getCode(), "支付失败");
+            }
+            
+            // 发送支付处理消息到RabbitMQ
+            try {
+                // 创建支付消息对象 - 使用HashMap替代PaymentProcessMessage类
+                Map<String, Object> paymentMessage = new HashMap<>();
+                paymentMessage.put("orderNo", orderNo);
+                paymentMessage.put("userId", order.getUserId());
+                paymentMessage.put("amount", order.getPaymentAmount());
+                paymentMessage.put("paymentMethod", payType);
+                
+                // 直接发送消息到RabbitMQ
+                rabbitTemplate.convertAndSend(
+                    RabbitMQConfig.PAYMENT_EXCHANGE, 
+                    RabbitMQConfig.PAYMENT_PROCESS_ROUTING_KEY, 
+                    paymentMessage
+                );
+                
+                log.info("支付处理消息发送成功，订单号：{}", orderNo);
+            } catch (Exception e) {
+                log.error("支付处理消息发送失败，但订单状态已更新，订单号：{}", orderNo, e);
+                // 消息发送失败，但不影响订单状态更新
             }
             
             log.info("订单支付成功，订单号：{}", orderNo);
@@ -162,7 +199,7 @@ public class OrderServiceImpl implements OrderService {
             }
             
             // 更新订单状态为已取消
-            int rows = flashSaleOrderMapper.updateStatus(order.getId(), 2);
+            int rows = flashSaleOrderMapper.updateStatus(order.getId(), 4);
             if (rows != 1) {
                 return Result.error(ResultCode.ERROR.getCode(), "取消订单失败");
             }
@@ -185,12 +222,12 @@ public class OrderServiceImpl implements OrderService {
                 return Result.error(ResultCode.ORDER_NOT_EXIST.getCode(), "订单不存在");
             }
             
-            if (order.getStatus() != 1) {
-                return Result.error(ResultCode.ORDER_STATUS_ERROR.getCode(), "订单状态错误，只有已支付订单才能完成");
+            if (order.getStatus() != 1 && order.getStatus() != 2) {
+                return Result.error(ResultCode.ORDER_STATUS_ERROR.getCode(), "订单状态错误，只有已支付或已发货订单才能完成");
             }
             
             // 更新订单状态为已完成
-            int rows = flashSaleOrderMapper.updateStatus(order.getId(), 4);
+            int rows = flashSaleOrderMapper.updateStatus(order.getId(), 3);
             if (rows != 1) {
                 return Result.error(ResultCode.ERROR.getCode(), "完成订单失败");
             }
@@ -213,10 +250,15 @@ public class OrderServiceImpl implements OrderService {
                 return Result.error(ResultCode.ORDER_NOT_EXIST.getCode(), "订单不存在");
             }
             
-            if (order.getStatus() == 0 && new Date().after(order.getExpireTime())) {
-                // 自动取消过期订单
-                flashSaleOrderMapper.updateStatus(order.getId(), 2);
-                log.info("自动取消过期订单，订单号：{}", orderNo);
+            if (order.getStatus() == 0 && order.getCreateTime() != null) {
+                // 计算过期时间（创建时间30分钟后）
+                Date expireTime = new Date(order.getCreateTime().getTime() + 30 * 60 * 1000);
+                
+                if (new Date().after(expireTime)) {
+                    // 自动取消过期订单
+                    flashSaleOrderMapper.updateStatus(order.getId(), 5); // 已超时
+                    log.info("自动取消过期订单，订单号：{}", orderNo);
+                }
             }
             
             return Result.success();
