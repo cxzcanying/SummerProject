@@ -1,0 +1,62 @@
+[
+  {
+    "resource": "doSeckill",
+    "limitApp": "default",
+    "grade": 0,
+    "count": 50,
+    "timeWindow": 60,
+    "minRequestAmount": 10,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "/api/seckill/submit",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 0.1,
+    "timeWindow": 30,
+    "minRequestAmount": 20,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "seckill-token",
+    "limitApp": "default",
+    "grade": 0,
+    "count": 100,
+    "timeWindow": 10,
+    "minRequestAmount": 5,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "/api/seckill/order/*/pay",
+    "limitApp": "default",
+    "grade": 0,
+    "count": 200,
+    "timeWindow": 120,
+    "minRequestAmount": 10,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "/api/seckill/activity/list",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 0.05,
+    "timeWindow": 20,
+    "minRequestAmount": 30,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  },
+  {
+    "resource": "/api/seckill/product/list",
+    "limitApp": "default",
+    "grade": 2,
+    "count": 5,
+    "timeWindow": 15,
+    "minRequestAmount": 10,
+    "statIntervalMs": 1000,
+    "slowRatioThreshold": 0.5
+  }
+] 

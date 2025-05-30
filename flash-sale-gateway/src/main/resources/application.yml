@@ -17,18 +17,62 @@ spring:
         server-addr: 127.0.0.1:8848
         group: flash-sale
         file-extension: yml
+        name: ${spring.application.name}-${spring.profiles.active}
     gateway:
-      # 默认过滤器
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-        - AddResponseHeader=X-Response-Default-Foo, Default-Bar
-      
-      # 发现定位器配置
       discovery:
         locator:
-          enabled: false # 关闭自动路由，使用手动配置
+          enabled: true
           lower-case-service-id: true
+      routes:
+        # 用户服务路由
+        - id: flash-sale-user
+          uri: lb://flash-sale-user
+          predicates:
+            - Path=/api/user/**
+          filters:
+            - StripPrefix=1
+        
+        # 产品服务路由
+        - id: flash-sale-product
+          uri: lb://flash-sale-product
+          predicates:
+            - Path=/api/product/**
+          filters:
+            - StripPrefix=1
+        
+        # 秒杀服务路由
+        - id: flash-sale-seckill
+          uri: lb://flash-sale-seckill
+          predicates:
+            - Path=/api/seckill/**
+          filters:
+            - StripPrefix=1
+        
+        # 订单服务路由
+        - id: flash-sale-order
+          uri: lb://flash-sale-order
+          predicates:
+            - Path=/api/order/**
+          filters:
+            - StripPrefix=1
+        
+        # 支付服务路由
+        - id: flash-sale-payment
+          uri: lb://flash-sale-payment
+          predicates:
+            - Path=/api/payment/**
+          filters:
+            - StripPrefix=1
 
+# 日志配置
+logging:
+  level:
+    com.flashsale.gateway: debug
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 management:
   endpoints:
@@ -40,15 +84,6 @@ management:
       show-details: always
     gateway:
       enabled: true
-
-# 日志配置
-logging:
-  level:
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.web.reactive: DEBUG
-    reactor.netty: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 
 

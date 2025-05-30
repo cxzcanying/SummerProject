@@ -1,0 +1,46 @@
+[
+  {
+    "resource": "seckill-preload",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 300,
+    "coldFactor": 3,
+    "clusterMode": false
+  },
+  {
+    "resource": "cache-preload",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 500,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 180,
+    "coldFactor": 3,
+    "clusterMode": false
+  },
+  {
+    "resource": "database-preload",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 240,
+    "coldFactor": 5,
+    "clusterMode": false
+  },
+  {
+    "resource": "redis-preload",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 120,
+    "coldFactor": 2,
+    "clusterMode": false
+  }
+] 

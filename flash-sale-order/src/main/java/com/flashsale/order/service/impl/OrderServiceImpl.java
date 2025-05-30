@@ -53,7 +53,6 @@ public class OrderServiceImpl implements OrderService {
             order.setFlashSaleProductId(seckillDTO.getFlashSaleProductId());
             order.setQuantity(seckillDTO.getQuantity());
             
-            // 这里应该调用商品服务获取商品信息，简化处理
             order.setProductName("秒杀商品");
             order.setProductImage("default.jpg");
             order.setFlashSalePrice(new BigDecimal("9.99"));
@@ -62,7 +61,9 @@ public class OrderServiceImpl implements OrderService {
             order.setPaymentAmount(order.getFlashSalePrice().multiply(new BigDecimal(order.getQuantity())));
             
             // 设置订单状态
-            order.setStatus(0); // 待支付
+            order.setStatus(0);
+            
+            // 设置订单状态
             order.setCreateTime(new Date());
             order.setUpdateTime(new Date());
             

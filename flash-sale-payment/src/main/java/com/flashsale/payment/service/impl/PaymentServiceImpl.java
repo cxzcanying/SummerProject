@@ -237,7 +237,6 @@ public class PaymentServiceImpl implements PaymentService {
                 return Result.error("退款金额不能大于支付金额");
             }
 
-            // 这里应该调用第三方支付平台的退款接口
             // 模拟退款处理
             boolean refundSuccess = processRefund(payment, refundAmount, refundReason);
             
@@ -311,7 +310,6 @@ public class PaymentServiceImpl implements PaymentService {
      * 模拟第三方退款处理
      */
     private boolean processRefund(Payment payment, BigDecimal refundAmount, String refundReason) {
-        // 这里应该调用具体的第三方支付平台退款接口
         // 模拟处理
         log.info("模拟退款处理，支付方式：{}，退款金额：{}", payment.getPaymentMethod(), refundAmount);
         return true;

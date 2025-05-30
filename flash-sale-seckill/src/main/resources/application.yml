@@ -31,6 +31,10 @@ spring:
     username: guest
     password: guest
     virtual-host: /
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
   cloud:
     nacos:
       discovery:
@@ -41,6 +45,33 @@ spring:
         group: flash-sale
         file-extension: yml
         name: ${spring.application.name}-${spring.profiles.active}
+    sentinel:
+      transport:
+        dashboard: 127.0.0.1:8090
+        port: 8721
+      eager: true
+      datasource:
+        # 流控规则
+        flow:
+          nacos:
+            server-addr: 127.0.0.1:8848
+            group-id: SENTINEL_GROUP
+            data-id: ${spring.application.name}-flow-rules
+            rule-type: flow
+        # 降级规则
+        degrade:
+          nacos:
+            server-addr: 127.0.0.1:8848
+            group-id: SENTINEL_GROUP
+            data-id: ${spring.application.name}-degrade-rules
+            rule-type: degrade
+        # 系统规则
+        system:
+          nacos:
+            server-addr: 127.0.0.1:8848
+            group-id: SENTINEL_GROUP
+            data-id: ${spring.application.name}-system-rules
+            rule-type: system
 
 mybatis:
   mapper-locations: classpath:/mapper/**/*.xml

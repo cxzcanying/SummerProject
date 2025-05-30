@@ -1,0 +1,102 @@
+[
+  {
+    "resource": "doSeckill",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 10,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 30,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/submit",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 50,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 20,
+    "clusterMode": false
+  },
+  {
+    "resource": "seckill-token",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 100,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 15,
+    "clusterMode": false
+  },
+  {
+    "resource": "seckill-query",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 10,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/activity/list",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 300,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 5,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/product/list",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 200,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 5,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/order/user/*",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 150,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 10,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/order/*/pay",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 30,
+    "strategy": 0,
+    "controlBehavior": 2,
+    "maxQueueingTimeMs": 500,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/preload",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 500,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 60,
+    "clusterMode": false
+  },
+  {
+    "resource": "/api/seckill/warmup",
+    "limitApp": "default",
+    "grade": 1,
+    "count": 1000,
+    "strategy": 0,
+    "controlBehavior": 1,
+    "warmUpPeriodSec": 120,
+    "clusterMode": false
+  }
+] 

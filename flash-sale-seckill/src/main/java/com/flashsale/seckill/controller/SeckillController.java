@@ -12,6 +12,8 @@ import com.flashsale.seckill.service.SeckillService;
 import com.flashsale.seckill.vo.FlashSaleActivityVO;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
 import com.flashsale.seckill.vo.SeckillOrderVO;
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -48,6 +50,7 @@ public class SeckillController {
      * 提交秒杀请求
      */
     @PostMapping("/submit")
+    @SentinelResource(value = "doSeckill", blockHandler = "handleBlock")
     public Result<String> doSeckill(@RequestBody @Valid SeckillDTO seckillDTO, HttpServletRequest request) {
         log.info("用户{}执行秒杀，商品ID：{}", seckillDTO.getUserId(), seckillDTO.getFlashSaleProductId());
         
@@ -65,6 +68,7 @@ public class SeckillController {
      * 查询秒杀结果
      */
     @GetMapping("/result/{seckillId}")
+    @SentinelResource(value = "seckill-query", blockHandler = "handleQueryBlock")
     public Result<String> getSeckillResult(@PathVariable String seckillId) {
         log.info("查询秒杀结果: {}", seckillId);
         return seckillService.getSeckillResult(seckillId);
@@ -74,6 +78,7 @@ public class SeckillController {
      * 生成秒杀令牌
      */
     @PostMapping("/token/generate")
+    @SentinelResource(value = "seckill-token", blockHandler = "handleTokenBlock")
     public Result<String> generateSeckillToken(@RequestBody SeckillTokenRequest tokenRequest) {
         log.info("为用户{}生成秒杀令牌，商品ID：{}", tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
         return seckillService.generateSeckillToken(tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
@@ -222,5 +227,21 @@ public class SeckillController {
     public static class SeckillTokenRequest {
         private Long flashSaleProductId;
         private Long userId;
+    }
+
+    // Sentinel 阻塞处理方法
+    public Result<String> handleBlock(SeckillDTO seckillDTO, HttpServletRequest request, BlockException ex) {
+        log.warn("秒杀请求被限流: {}", ex.getMessage());
+        return Result.error(429, "系统繁忙，请稍后重试");
+    }
+
+    public Result<String> handleTokenBlock(SeckillTokenRequest tokenRequest, BlockException ex) {
+        log.warn("令牌生成请求被限流: {}", ex.getMessage());
+        return Result.error(429, "请求过于频繁，请稍后重试");
+    }
+
+    public Result<String> handleQueryBlock(String seckillId, BlockException ex) {
+        log.warn("查询请求被限流: {}", ex.getMessage());
+        return Result.error(429, "查询请求过于频繁，请稍后重试");
     }
 } 

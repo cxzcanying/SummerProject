@@ -39,4 +39,9 @@ public interface SeckillOrderMapper {
      */
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
+    /**
+     * 根据订单号更新订单状态
+     */
+    int updateStatusByOrderNo(@Param("orderNo") String orderNo, @Param("status") Integer status);
+
 } 

@@ -1,0 +1,98 @@
+[
+  {
+    "resource": "doSeckill",
+    "paramIdx": 1,
+    "count": 5,
+    "grade": 1,
+    "durationInSec": 1,
+    "controlBehavior": 0,
+    "maxQueueingTimeMs": 0,
+    "paramFlowItemList": [
+      {
+        "object": "1",
+        "classType": "java.lang.Long",
+        "count": 20
+      },
+      {
+        "object": "2", 
+        "classType": "java.lang.Long",
+        "count": 15
+      },
+      {
+        "object": "3",
+        "classType": "java.lang.Long",
+        "count": 25
+      },
+      {
+        "object": "4",
+        "classType": "java.lang.Long",
+        "count": 10
+      },
+      {
+        "object": "5",
+        "classType": "java.lang.Long",
+        "count": 30
+      }
+    ],
+    "clusterMode": false,
+    "clusterConfig": {
+      "flowId": 1,
+      "thresholdType": 1,
+      "fallbackToLocalWhenFail": true
+    }
+  },
+  {
+    "resource": "/api/seckill/submit",
+    "paramIdx": 0,
+    "count": 10,
+    "grade": 1,
+    "durationInSec": 1,
+    "controlBehavior": 0,
+    "maxQueueingTimeMs": 200,
+    "paramFlowItemList": [
+      {
+        "object": "1",
+        "classType": "java.lang.Long",
+        "count": 50
+      },
+      {
+        "object": "2",
+        "classType": "java.lang.Long",
+        "count": 40
+      },
+      {
+        "object": "3",
+        "classType": "java.lang.Long",
+        "count": 60
+      }
+    ],
+    "clusterMode": false
+  },
+  {
+    "resource": "seckill-token",
+    "paramIdx": 1,
+    "count": 20,
+    "grade": 1,
+    "durationInSec": 1,
+    "controlBehavior": 0,
+    "maxQueueingTimeMs": 100,
+    "paramFlowItemList": [
+      {
+        "object": "1",
+        "classType": "java.lang.Long",
+        "count": 100
+      },
+      {
+        "object": "2",
+        "classType": "java.lang.Long",
+        "count": 80
+      },
+      {
+        "object": "3",
+        "classType": "java.lang.Long",
+        "count": 120
+      }
+    ],
+    "clusterMode": false
+  }
+] 

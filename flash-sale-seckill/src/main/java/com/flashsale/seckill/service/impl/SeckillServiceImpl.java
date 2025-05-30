@@ -7,6 +7,7 @@ import com.flashsale.common.result.Result;
 import com.flashsale.common.result.ResultCode;
 import com.flashsale.seckill.entity.SeckillOrder;
 import com.flashsale.seckill.mapper.SeckillOrderMapper;
+import com.flashsale.seckill.mq.PaymentMessageProducer;
 import com.flashsale.seckill.service.FlashSaleProductService;
 import com.flashsale.seckill.service.SeckillService;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
@@ -40,6 +41,9 @@ public class SeckillServiceImpl implements SeckillService {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private PaymentMessageProducer paymentMessageProducer;
 
     private static final String SECKILL_RESULT_KEY = "seckill:result:";
     private static final String SECKILL_TOKEN_KEY = "seckill:token:";
@@ -267,11 +271,45 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public Result<String> paySeckillOrder(Long userId, String orderNo, Integer payType) {
         try {
-            // 简化实现
-            return Result.success("支付成功");
+            log.info("开始异步支付秒杀订单 - 用户ID: {}, 订单号: {}, 支付方式: {}", userId, orderNo, payType);
+            
+            // 1. 查询订单
+            SeckillOrder order = orderMapper.findByOrderNo(orderNo);
+            if (order == null) {
+                return Result.error("订单不存在");
+            }
+            
+            // 2. 验证订单所有者
+            if (!order.getUserId().equals(userId)) {
+                return Result.error("无权操作此订单");
+            }
+            
+            // 3. 验证订单状态
+            if (order.getStatus() != 0) {
+                return Result.error("订单状态不支持支付");
+            }
+            
+            // 4. 验证订单是否过期
+            if (order.getExpireTime() != null && order.getExpireTime().before(new Date())) {
+                // 更新订单状态为已超时
+                orderMapper.updateStatus(order.getId(), 5);
+                return Result.error("订单已过期");
+            }
+            
+            // 5. 发送异步支付消息
+            paymentMessageProducer.sendPaymentMessage(
+                orderNo, 
+                userId, 
+                order.getPaymentAmount(), 
+                payType
+            );
+            
+            log.info("异步支付消息发送成功 - 订单号: {}", orderNo);
+            return Result.success("支付请求已提交，正在处理中...");
+            
         } catch (Exception e) {
-            log.error("支付秒杀订单异常", e);
-            return Result.error("支付订单失败：" + e.getMessage());
+            log.error("支付秒杀订单异常 - 用户ID: {}, 订单号: {}", userId, orderNo, e);
+            return Result.error("支付失败：" + e.getMessage());
         }
     }
 

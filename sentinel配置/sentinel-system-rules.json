@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1,
+    "highestSystemLoad": 8.0,
+    "avgRt": -1,
+    "maxThread": -1,
+    "qps": 5000,
+    "highestCpuUsage": 0.85
+  }
+] 

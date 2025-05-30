@@ -303,7 +303,6 @@ public class RabbitMQConfig {
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
             if (!ack) {
                 log.error("消息发送失败，correlationData: {}, cause: {}", correlationData, cause);
-                // 可以在这里实现重试机制或记录失败消息
             } else {
                 log.debug("消息发送成功，correlationData: {}", correlationData);
             }
@@ -314,7 +313,6 @@ public class RabbitMQConfig {
             log.error("消息投递失败，returned message: {}, replyCode: {}, replyText: {}, exchange: {}, routingKey: {}",
                     returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
                     returned.getExchange(), returned.getRoutingKey());
-            // 可以在这里实现消息补偿机制
         });
         
         // 设置mandatory为true，当消息无法路由到队列时会触发return callback
