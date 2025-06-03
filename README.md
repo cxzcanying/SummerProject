@@ -306,20 +306,6 @@ log.info("用户{}执行秒杀，商品ID：{}，结果：{}",
 - **RabbitMQ**: 3.8+
 - **Nacos**: 2.x
 
-### 一键启动
-```bash
-# 1. 启动基础中间件
-# 启动MySQL、Redis、RabbitMQ、Nacos
-
-# 2. 导入数据库
-mysql -u root -p < sql/flash_sale.sql
-
-# 3. 一键启动所有服务
-start-only-seckill.bat
-
-# 4. 验证系统
-test-seckill-apis.ps1
-```
 
 ### 服务端口
 | 服务 | 端口 | 访问地址 |
@@ -332,6 +318,7 @@ test-seckill-apis.ps1
 | Payment | 8004 | http://localhost:8004 |
 | Sentinel | 8090 | http://localhost:8090 |
 | Nacos | 8848 | http://localhost:8848/nacos |
+
 
 ---
 
