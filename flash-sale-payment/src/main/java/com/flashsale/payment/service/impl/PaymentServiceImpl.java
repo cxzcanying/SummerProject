@@ -43,10 +43,22 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentVO> createPayment(PaymentDTO paymentDTO) {
         try {
-            // 检查订单是否已有支付记录
+            log.info("开始创建支付订单，订单ID：{}，用户ID：{}，金额：{}", 
+                    paymentDTO.getOrderId(), paymentDTO.getUserId(), paymentDTO.getAmount());
+            
+            // 检查订单是否已有支付记录（任何状态）
             Payment existPayment = paymentMapper.findByOrderId(paymentDTO.getOrderId());
-            if (existPayment != null && existPayment.getStatus() == 1) {
-                return Result.error("订单已支付，请勿重复支付");
+            if (existPayment != null) {
+                if (existPayment.getStatus() == 1) {
+                    log.warn("订单已支付，订单ID：{}", paymentDTO.getOrderId());
+                    return Result.error("订单已支付，请勿重复支付");
+                } else {
+                    log.warn("订单已存在待支付记录，订单ID：{}，支付流水号：{}", 
+                            paymentDTO.getOrderId(), existPayment.getPaymentNo());
+                    // 返回已存在的支付记录
+                    PaymentVO paymentVO = convertToVO(existPayment);
+                    return Result.success("支付订单已存在", paymentVO);
+                }
             }
 
             // 创建支付记录
@@ -57,8 +69,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setOrderNo("FS" + System.currentTimeMillis() + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
             
             payment.setPaymentNo(generatePaymentNo());
-            payment.setStatus(0);
-            // 待支付
+            payment.setStatus(0); // 待支付
             payment.setCreateTime(new Date());
             payment.setUpdateTime(new Date());
 
@@ -68,20 +79,29 @@ public class PaymentServiceImpl implements PaymentService {
                 cachePayment(payment);
 
                 PaymentVO paymentVO = convertToVO(payment);
-                log.info("支付订单创建成功，支付流水号：{}", payment.getPaymentNo());
+                log.info("支付订单创建成功，订单ID：{}，支付流水号：{}", 
+                        paymentDTO.getOrderId(), payment.getPaymentNo());
                 return Result.success(paymentVO);
             } else {
+                log.error("插入支付记录失败，订单ID：{}", paymentDTO.getOrderId());
                 return Result.error("创建支付订单失败");
             }
         } catch (Exception e) {
-            log.error("创建支付订单异常", e);
+            log.error("创建支付订单异常，订单ID：{}，错误信息：{}", 
+                    paymentDTO.getOrderId(), e.getMessage(), e);
+            
+            // 针对重复键异常的特殊处理
+            if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
+                return Result.error("订单已存在支付记录，请勿重复创建");
+            }
+            
             return Result.error("创建支付订单失败：" + e.getMessage());
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result<Void> handlePaymentCallback(String paymentNo, String thirdPartyPaymentNo, Integer status) {
+    public Result<String> handlePaymentCallback(String paymentNo, String thirdPartyPaymentNo, Integer status) {
         try {
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
             if (payment == null) {
@@ -90,7 +110,7 @@ public class PaymentServiceImpl implements PaymentService {
 
             if (payment.getStatus() == 1) {
                 log.warn("支付已成功，无需重复处理，支付流水号：{}", paymentNo);
-                return Result.success();
+                return Result.success("支付已完成");
             }
 
             // 更新支付信息
@@ -106,8 +126,10 @@ public class PaymentServiceImpl implements PaymentService {
                 // 删除缓存
                 deletePaymentCache(paymentNo);
 
-                log.info("支付回调处理成功，支付流水号：{}，状态：{}", paymentNo, status);
-                return Result.success();
+                // 根据支付状态返回相应的消息
+                String message = getPaymentCallbackMessage(status);
+                log.info("支付回调处理成功，支付流水号：{}，状态：{}，消息：{}", paymentNo, status, message);
+                return Result.success(message);
             } else {
                 return Result.error("支付回调处理失败");
             }
@@ -222,7 +244,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result<Void> applyRefund(String paymentNo, BigDecimal refundAmount, String refundReason) {
+    public Result<String> applyRefund(String paymentNo, BigDecimal refundAmount, String refundReason) {
         try {
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
             if (payment == null) {
@@ -247,7 +269,7 @@ public class PaymentServiceImpl implements PaymentService {
                 deletePaymentCache(paymentNo);
                 
                 log.info("退款申请成功，支付流水号：{}，退款金额：{}", paymentNo, refundAmount);
-                return Result.success();
+                return Result.success("退款申请成功，预计1-3个工作日到账");
             } else {
                 return Result.error("退款申请失败");
             }
@@ -259,11 +281,12 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result<Void> handleRefundCallback(String refundNo, Integer status) {
+    public Result<String> handleRefundCallback(String refundNo, Integer status) {
         try {
             // 这里处理退款回调逻辑
-            log.info("处理退款回调，退款流水号：{}，状态：{}", refundNo, status);
-            return Result.success();
+            String message = status == 1 ? "退款成功" : "退款失败";
+            log.info("处理退款回调，退款流水号：{}，状态：{}，消息：{}", refundNo, status, message);
+            return Result.success(message);
         } catch (Exception e) {
             log.error("处理退款回调异常", e);
             return Result.error("处理退款回调失败：" + e.getMessage());
@@ -272,7 +295,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result<Void> cancelPayment(String paymentNo) {
+    public Result<String> cancelPayment(String paymentNo) {
         try {
             Payment payment = paymentMapper.findByPaymentNo(paymentNo);
             if (payment == null) {
@@ -289,7 +312,7 @@ public class PaymentServiceImpl implements PaymentService {
                 // 删除缓存
                 deletePaymentCache(paymentNo);
                 log.info("支付取消成功，支付流水号：{}", paymentNo);
-                return Result.success();
+                return Result.success("支付已取消");
             } else {
                 return Result.error("取消支付失败");
             }
@@ -428,6 +451,22 @@ public class PaymentServiceImpl implements PaymentService {
         } catch (Exception e) {
             log.error("调试：查询所有支付记录异常", e);
             return Result.error("查询失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取支付回调消息
+     */
+    private String getPaymentCallbackMessage(Integer status) {
+        switch (status) {
+            case 1:
+                return "支付成功";
+            case 2:
+                return "支付失败";
+            case 0:
+                return "支付处理中";
+            default:
+                return "支付状态未知";
         }
     }
 } 

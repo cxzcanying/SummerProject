@@ -19,7 +19,6 @@ public interface FlashSaleProductMapper {
      * 插入秒杀商品
      */
     int insert(FlashSaleProduct product);
-    
     /**
      * 根据ID查找秒杀商品
      */

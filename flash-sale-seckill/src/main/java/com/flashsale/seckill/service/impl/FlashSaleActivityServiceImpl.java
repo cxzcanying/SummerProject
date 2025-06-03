@@ -43,13 +43,13 @@ public class FlashSaleActivityServiceImpl implements FlashSaleActivityService {
             FlashSaleActivity activity = new FlashSaleActivity();
             BeanUtils.copyProperties(activityDTO, activity);
             activity.setStatus(0);
-            // 未开始
+            // 初始状态为待开始
             activity.setCreateTime(new Date());
             activity.setUpdateTime(new Date());
 
             int result = activityMapper.insert(activity);
             if (result > 0) {
-                log.info("创建秒杀活动成功，活动ID：{}", activity.getId());
+                log.info("创建秒杀活动成功，活动名称：{}", activity.getName());
                 return Result.success();
             } else {
                 return Result.error("创建活动失败");
@@ -57,36 +57,6 @@ public class FlashSaleActivityServiceImpl implements FlashSaleActivityService {
         } catch (Exception e) {
             log.error("创建秒杀活动异常", e);
             return Result.error("创建活动失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> batchCreateActivities(List<FlashSaleActivityDTO> activityDTOs) {
-        try {
-            List<FlashSaleActivity> activities = new ArrayList<>();
-            Date now = new Date();
-            
-            for (FlashSaleActivityDTO dto : activityDTOs) {
-                FlashSaleActivity activity = new FlashSaleActivity();
-                BeanUtils.copyProperties(dto, activity);
-                activity.setStatus(0);
-                // 未开始
-                activity.setCreateTime(now);
-                activity.setUpdateTime(now);
-                activities.add(activity);
-            }
-            
-            int result = activityMapper.batchInsert(activities);
-            if (result > 0) {
-                log.info("批量创建秒杀活动成功，数量：{}", activities.size());
-                return Result.success();
-            } else {
-                return Result.error("批量创建活动失败");
-            }
-        } catch (Exception e) {
-            log.error("批量创建秒杀活动异常", e);
-            return Result.error("批量创建活动失败：" + e.getMessage());
         }
     }
 
@@ -138,23 +108,7 @@ public class FlashSaleActivityServiceImpl implements FlashSaleActivityService {
             return Result.error("删除活动失败：" + e.getMessage());
         }
     }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> batchDeleteActivities(List<Long> ids) {
-        try {
-            int result = activityMapper.batchDeleteByIds(ids);
-            if (result > 0) {
-                log.info("批量删除秒杀活动成功，数量：{}", ids.size());
-                return Result.success();
-            } else {
-                return Result.error("批量删除活动失败");
-            }
-        } catch (Exception e) {
-            log.error("批量删除秒杀活动异常", e);
-            return Result.error("批量删除活动失败：" + e.getMessage());
-        }
-    }
+
 
     @Override
     public Result<FlashSaleActivityVO> getActivityDetail(Long id) {
@@ -253,65 +207,7 @@ public class FlashSaleActivityServiceImpl implements FlashSaleActivityService {
             return Result.error("获取活动列表失败：" + e.getMessage());
         }
     }
-    
-    @Override
-    public Result<List<FlashSaleActivityVO>> getEndedActivities() {
-        try {
-            List<FlashSaleActivity> activities = activityMapper.findEndedActivities();
-            List<FlashSaleActivityVO> activityVOList = activities.stream()
-                    .map(this::convertToVO)
-                    .collect(Collectors.toList());
-            return Result.success(activityVOList);
-        } catch (Exception e) {
-            log.error("获取已结束活动列表异常", e);
-            return Result.error("获取活动列表失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    public Result<List<FlashSaleActivityVO>> getActivitiesByTimeRange(Date startTime, Date endTime) {
-        try {
-            List<FlashSaleActivity> activities = activityMapper.findByTimeRange(startTime, endTime);
-            List<FlashSaleActivityVO> activityVOList = activities.stream()
-                    .map(this::convertToVO)
-                    .collect(Collectors.toList());
-            return Result.success(activityVOList);
-        } catch (Exception e) {
-            log.error("根据时间范围获取活动列表异常", e);
-            return Result.error("获取活动列表失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    public Result<List<FlashSaleActivityVO>> getActivitiesByName(String name) {
-        try {
-            List<FlashSaleActivity> activities = activityMapper.findByNameLike(name);
-            List<FlashSaleActivityVO> activityVOList = activities.stream()
-                    .map(this::convertToVO)
-                    .collect(Collectors.toList());
-            return Result.success(activityVOList);
-        } catch (Exception e) {
-            log.error("根据名称获取活动列表异常", e);
-            return Result.error("获取活动列表失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> updateActivityTime(Long id, Date startTime, Date endTime) {
-        try {
-            int result = activityMapper.updateActivityTime(id, startTime, endTime);
-            if (result > 0) {
-                log.info("更新活动时间成功，活动ID：{}", id);
-                return Result.success();
-            } else {
-                return Result.error("更新活动时间失败");
-            }
-        } catch (Exception e) {
-            log.error("更新活动时间异常", e);
-            return Result.error("更新活动时间失败：" + e.getMessage());
-        }
-    }
+
     
     @Override
     public Result<Object> getActivityStatistics(Long id) {

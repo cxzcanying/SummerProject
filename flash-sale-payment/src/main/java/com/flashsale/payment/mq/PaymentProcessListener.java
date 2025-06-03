@@ -3,6 +3,7 @@ package com.flashsale.payment.mq;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flashsale.common.mq.RabbitMQConfig;
+import com.flashsale.common.result.Result;
 import com.flashsale.payment.dto.PaymentDTO;
 import com.flashsale.payment.service.PaymentService;
 import com.rabbitmq.client.Channel;
@@ -70,12 +71,17 @@ public class PaymentProcessListener {
             paymentDTO.setPaymentMethod(paymentMethod);
             
             // 调用支付服务创建支付记录
-            paymentService.createPayment(paymentDTO);
+            Result<?> result = paymentService.createPayment(paymentDTO);
             
-            log.info("支付处理成功，订单号: {}", orderNo);
-            
-            // 确认消息
-            channel.basicAck(deliveryTag, false);
+            if (result.getCode() == 200) {
+                log.info("支付处理成功，订单号: {}，消息: {}", orderNo, result.getMessage());
+                // 确认消息
+                channel.basicAck(deliveryTag, false);
+            } else {
+                log.error("支付处理失败，订单号: {}，错误信息: {}", orderNo, result.getMessage());
+                // 拒绝消息并不重新入队（避免无限循环）
+                channel.basicNack(deliveryTag, false, false);
+            }
             
         } catch (Exception e) {
             log.error("支付处理失败: {}", e.getMessage(), e);
@@ -87,17 +93,28 @@ public class PaymentProcessListener {
     
     /**
      * 从订单号生成订单ID
+     * 使用订单号的哈希值结合当前时间戳，确保唯一性
      */
     private Long generateOrderId(String orderNo) {
         try {
-            // 从订单号中提取时间戳部分
-            if (orderNo.startsWith("FS")) {
-                String timestampStr = orderNo.substring(2, 15); // 假设时间戳部分为13位
-                return Long.parseLong(timestampStr);
+            if (orderNo != null && orderNo.startsWith("FS")) {
+                // 从订单号中提取时间戳部分
+                String timestampStr = orderNo.substring(2, Math.min(15, orderNo.length()));
+                Long timestamp = Long.parseLong(timestampStr);
+                
+                // 结合订单号的哈希值，确保唯一性
+                int hashCode = Math.abs(orderNo.hashCode());
+                // 取哈希值的后6位，避免太大
+                long hashSuffix = hashCode % 1000000;
+                
+                // 组合时间戳和哈希值
+                return timestamp * 1000000 + hashSuffix;
             }
-            return System.currentTimeMillis(); // 如果解析失败，返回当前时间戳
+            
+            // 如果订单号格式不正确，使用当前时间戳
+            return System.currentTimeMillis();
         } catch (Exception e) {
-            log.warn("无法从订单号解析订单ID，使用时间戳代替: {}", orderNo);
+            log.warn("无法从订单号解析订单ID，使用时间戳代替: {}，错误: {}", orderNo, e.getMessage());
             return System.currentTimeMillis();
         }
     }

@@ -20,11 +20,6 @@ public interface FlashSaleActivityMapper {
     int insert(FlashSaleActivity activity);
 
     /**
-     * 批量插入秒杀活动
-     */
-    int batchInsert(@Param("list") List<FlashSaleActivity> activities);
-
-    /**
      * 根据ID查找活动
      */
     FlashSaleActivity findById(@Param("id") Long id);
@@ -38,11 +33,6 @@ public interface FlashSaleActivityMapper {
      * 根据ID删除活动
      */
     int deleteById(@Param("id") Long id);
-
-    /**
-     * 批量删除活动
-     */
-    int batchDeleteByIds(@Param("list") List<Long> ids);
 
     /**
      * 分页查询活动列表
@@ -62,11 +52,6 @@ public interface FlashSaleActivityMapper {
     int updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
     /**
-     * 更新活动时间
-     */
-    int updateActivityTime(@Param("id") Long id, @Param("startTime") Date startTime, @Param("endTime") Date endTime);
-
-    /**
      * 查询正在进行的活动
      */
     List<FlashSaleActivity> findActiveActivities();
@@ -75,19 +60,4 @@ public interface FlashSaleActivityMapper {
      * 查询即将开始的活动
      */
     List<FlashSaleActivity> findUpcomingActivities();
-
-    /**
-     * 查询已结束的活动
-     */
-    List<FlashSaleActivity> findEndedActivities();
-
-    /**
-     * 根据时间范围查询活动
-     */
-    List<FlashSaleActivity> findByTimeRange(@Param("startTime") Date startTime, @Param("endTime") Date endTime);
-
-    /**
-     * 根据名称模糊查询活动
-     */
-    List<FlashSaleActivity> findByNameLike(@Param("name") String name);
 } 

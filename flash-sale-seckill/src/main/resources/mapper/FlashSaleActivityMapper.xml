@@ -24,16 +24,6 @@
         VALUES (#{name}, #{description}, #{startTime}, #{endTime}, #{status}, #{createTime}, #{updateTime})
     </insert>
 
-    <!-- 批量插入秒杀活动 -->
-    <insert id="batchInsert" parameterType="java.util.List">
-        INSERT INTO flash_sale_activity (name, description, start_time, end_time, status, create_time, update_time)
-        VALUES
-        <foreach collection="list" item="activity" separator=",">
-            (#{activity.name}, #{activity.description}, #{activity.startTime}, #{activity.endTime}, 
-             #{activity.status}, #{activity.createTime}, #{activity.updateTime})
-        </foreach>
-    </insert>
-
     <!-- 根据ID查找活动 -->
     <select id="findById" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT
@@ -59,15 +49,6 @@
     <!-- 根据ID删除活动 -->
     <delete id="deleteById" parameterType="java.lang.Long">
         DELETE FROM flash_sale_activity WHERE id = #{id}
-    </delete>
-
-    <!-- 批量删除活动 -->
-    <delete id="batchDeleteByIds" parameterType="java.util.List">
-        DELETE FROM flash_sale_activity 
-        WHERE id IN
-        <foreach collection="list" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
     </delete>
 
     <!-- 分页查询活动列表 -->
@@ -102,13 +83,6 @@
         WHERE id = #{id}
     </update>
 
-    <!-- 更新活动时间 -->
-    <update id="updateActivityTime">
-        UPDATE flash_sale_activity
-        SET start_time = #{startTime}, end_time = #{endTime}, update_time = NOW()
-        WHERE id = #{id}
-    </update>
-
     <!-- 查询正在进行的活动 -->
     <select id="findActiveActivities" resultMap="BaseResultMap">
         SELECT
@@ -128,35 +102,6 @@
         WHERE status = 0 
         AND start_time > NOW()
         ORDER BY start_time
-    </select>
-
-    <!-- 查询已结束的活动 -->
-    <select id="findEndedActivities" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM flash_sale_activity
-        WHERE status = 2 OR end_time &lt;= NOW()
-        ORDER BY end_time DESC
-    </select>
-
-    <!-- 根据时间范围查询活动 -->
-    <select id="findByTimeRange" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM flash_sale_activity
-        WHERE (start_time BETWEEN #{startTime} AND #{endTime})
-           OR (end_time BETWEEN #{startTime} AND #{endTime})
-           OR (start_time &lt;= #{startTime} AND end_time >= #{endTime})
-        ORDER BY start_time
-    </select>
-
-    <!-- 根据名称模糊查询活动 -->
-    <select id="findByNameLike" resultMap="BaseResultMap">
-        SELECT
-        <include refid="Base_Column_List"/>
-        FROM flash_sale_activity
-        WHERE name LIKE CONCAT('%', #{name}, '%')
-        ORDER BY create_time DESC
     </select>
 
 </mapper> 

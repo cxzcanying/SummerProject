@@ -31,7 +31,7 @@ public interface PaymentService {
      * @param status 支付状态
      * @return 处理结果
      */
-    Result<Void> handlePaymentCallback(String paymentNo, String thirdPartyPaymentNo, Integer status);
+    Result<String> handlePaymentCallback(String paymentNo, String thirdPartyPaymentNo, Integer status);
 
     /**
      * 查询支付详情
@@ -67,7 +67,7 @@ public interface PaymentService {
      * @param refundReason 退款原因
      * @return 退款结果
      */
-    Result<Void> applyRefund(String paymentNo, BigDecimal refundAmount, String refundReason);
+    Result<String> applyRefund(String paymentNo, BigDecimal refundAmount, String refundReason);
 
     /**
      * 处理退款回调
@@ -76,7 +76,7 @@ public interface PaymentService {
      * @param status 退款状态
      * @return 处理结果
      */
-    Result<Void> handleRefundCallback(String refundNo, Integer status);
+    Result<String> handleRefundCallback(String refundNo, Integer status);
 
     /**
      * 取消支付
@@ -84,7 +84,7 @@ public interface PaymentService {
      * @param paymentNo 支付流水号
      * @return 取消结果
      */
-    Result<Void> cancelPayment(String paymentNo);
+    Result<String> cancelPayment(String paymentNo);
 
     /**
      * 调试方法 - 获取所有支付记录

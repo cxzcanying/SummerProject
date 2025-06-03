@@ -5,8 +5,6 @@ import com.flashsale.common.result.PageResult;
 import com.flashsale.seckill.dto.FlashSaleProductDTO;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
 
-import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 
 /**

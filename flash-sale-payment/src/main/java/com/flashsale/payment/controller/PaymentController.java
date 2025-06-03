@@ -37,7 +37,7 @@ public class PaymentController {
      * 支付回调接口
      */
     @PostMapping("/callback")
-    public Result<Void> paymentCallback(
+    public Result<String> paymentCallback(
             @RequestParam String paymentNo,
             @RequestParam String thirdPartyPaymentNo,
             @RequestParam Integer status) {
@@ -86,7 +86,7 @@ public class PaymentController {
      * 申请退款
      */
     @PostMapping("/refund")
-    public Result<Void> applyRefund(
+    public Result<String> applyRefund(
             @RequestParam String paymentNo,
             @RequestParam BigDecimal refundAmount,
             @RequestParam String refundReason) {
@@ -97,7 +97,7 @@ public class PaymentController {
      * 退款回调接口
      */
     @PostMapping("/refund/callback")
-    public Result<Void> refundCallback(
+    public Result<String> refundCallback(
             @RequestParam String refundNo,
             @RequestParam Integer status) {
         return paymentService.handleRefundCallback(refundNo, status);
@@ -107,7 +107,7 @@ public class PaymentController {
      * 取消支付
      */
     @PostMapping("/cancel/{paymentNo}")
-    public Result<Void> cancelPayment(@PathVariable String paymentNo) {
+    public Result<String> cancelPayment(@PathVariable String paymentNo) {
         return paymentService.cancelPayment(paymentNo);
     }
     //TODO 完成支付接口调用
