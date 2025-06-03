@@ -68,22 +68,22 @@ public interface FlashSaleActivityService {
      * 获取即将开始的活动列表
      */
     Result<List<FlashSaleActivityVO>> getUpcomingActivities();
-    
+
     /**
      * 获取已结束的活动列表
      */
     Result<List<FlashSaleActivityVO>> getEndedActivities();
-    
+
     /**
      * 根据时间范围查询活动
      */
     Result<List<FlashSaleActivityVO>> getActivitiesByTimeRange(Date startTime, Date endTime);
-    
+
     /**
      * 根据名称模糊查询活动
      */
     Result<List<FlashSaleActivityVO>> getActivitiesByName(String name);
-    
+
     /**
      * 更新活动时间
      */

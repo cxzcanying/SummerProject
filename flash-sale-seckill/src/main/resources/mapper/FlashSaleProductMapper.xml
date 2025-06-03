@@ -23,12 +23,26 @@
     <!-- 插入商品 -->
     <insert id="insert" parameterType="com.flashsale.seckill.entity.FlashSaleProduct" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO flash_sale_product (
-            activity_id, product_id, flash_sale_price, flash_sale_stock, 
-            flash_sale_limit, stock_used, status, create_time, update_time
+            activity_id, 
+            product_id, 
+            flash_sale_price, 
+            flash_sale_stock
+            <if test="flashSaleLimit != null">, flash_sale_limit</if>
+            <if test="stockUsed != null">, stock_used</if>
+            <if test="status != null">, status</if>
+            <if test="createTime != null">, create_time</if>
+            <if test="updateTime != null">, update_time</if>
         )
         VALUES (
-            #{activityId}, #{productId}, #{flashSalePrice}, #{flashSaleStock},
-            #{flashSaleLimit}, #{stockUsed}, #{status}, #{createTime}, #{updateTime}
+            #{activityId}, 
+            #{productId}, 
+            #{flashSalePrice}, 
+            #{flashSaleStock}
+            <if test="flashSaleLimit != null">, #{flashSaleLimit}</if>
+            <if test="stockUsed != null">, #{stockUsed}</if>
+            <if test="status != null">, #{status}</if>
+            <if test="createTime != null">, #{createTime}</if>
+            <if test="updateTime != null">, #{updateTime}</if>
         )
     </insert>
 
@@ -38,6 +52,19 @@
         <include refid="Base_Column_List"/>
         FROM flash_sale_product
         WHERE id = #{id}
+    </select>
+
+    <!-- 根据ID删除商品 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM flash_sale_product WHERE id = #{id}
+    </delete>
+
+    <!-- 根据商品ID查找秒杀商品列表 -->
+    <select id="findByProductId" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM flash_sale_product
+        WHERE product_id = #{productId}
     </select>
 
     <!-- 根据活动ID查找商品列表 -->
@@ -62,7 +89,7 @@
             </if>
         </where>
         ORDER BY create_time DESC
-        `LIMIT` #{offset}, #{size}
+        LIMIT #{offset}, #{size}
     </select>
 
     <!-- 统计商品总数 -->
@@ -113,10 +140,18 @@
     <!-- 扣减库存 -->
     <update id="decreaseStock">
         UPDATE flash_sale_product
-        SET stock_used = stock_used + #{quantity},
+        SET flash_sale_stock = flash_sale_stock - #{quantity},
             update_time = NOW()
         WHERE id = #{id}
-        AND flash_sale_stock >= stock_used + #{quantity}
+        AND flash_sale_stock >= #{quantity}
+    </update>
+
+    <!-- 增加库存 -->
+    <update id="increaseStock">
+        UPDATE flash_sale_product
+        SET flash_sale_stock = flash_sale_stock + #{quantity},
+            update_time = NOW()
+        WHERE id = #{id}
     </update>
 
     <!-- 增加已售数量 -->

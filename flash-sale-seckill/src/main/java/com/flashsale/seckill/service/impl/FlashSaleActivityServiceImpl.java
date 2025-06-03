@@ -70,7 +70,8 @@ public class FlashSaleActivityServiceImpl implements FlashSaleActivityService {
             for (FlashSaleActivityDTO dto : activityDTOs) {
                 FlashSaleActivity activity = new FlashSaleActivity();
                 BeanUtils.copyProperties(dto, activity);
-                activity.setStatus(0); // 未开始
+                activity.setStatus(0);
+                // 未开始
                 activity.setCreateTime(now);
                 activity.setUpdateTime(now);
                 activities.add(activity);

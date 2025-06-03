@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -57,7 +56,8 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
             
             // 设置初始值
             product.setStockUsed(0);
-            product.setStatus(1); // 启用
+            product.setStatus(1);
+            // 启用
             product.setCreateTime(new Date());
             product.setUpdateTime(new Date());
 
@@ -71,40 +71,6 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
         } catch (Exception e) {
             log.error("添加秒杀商品异常", e);
             return Result.error("添加商品失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> batchAddProducts(List<FlashSaleProductDTO> productDTOs) {
-        try {
-            List<FlashSaleProduct> products = new ArrayList<>();
-            Date now = new Date();
-            
-            for (FlashSaleProductDTO dto : productDTOs) {
-                FlashSaleProduct product = new FlashSaleProduct();
-                BeanUtils.copyProperties(dto, product);
-                product.setFlashSaleLimit(dto.getFlashSaleLimit());
-                product.setStockUsed(0);
-                product.setStatus(1); // 启用
-                // 避免设置startTime和endTime字段
-                product.setStartTime(null);
-                product.setEndTime(null);
-                product.setCreateTime(now);
-                product.setUpdateTime(now);
-                products.add(product);
-            }
-            
-            int result = productMapper.batchInsert(products);
-            if (result > 0) {
-                log.info("批量添加秒杀商品成功，数量：{}", products.size());
-                return Result.success();
-            } else {
-                return Result.error("批量添加商品失败");
-            }
-        } catch (Exception e) {
-            log.error("批量添加秒杀商品异常", e);
-            return Result.error("批量添加商品失败：" + e.getMessage());
         }
     }
 
@@ -169,26 +135,7 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
         }
     }
     
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> batchDeleteProducts(List<Long> ids) {
-        try {
-            int result = productMapper.batchDeleteByIds(ids);
-            if (result > 0) {
-                // 清除缓存
-                for (Long id : ids) {
-                    clearProductCache(id);
-                }
-                log.info("批量删除秒杀商品成功，数量：{}", ids.size());
-                return Result.success();
-            } else {
-                return Result.error("批量删除商品失败");
-            }
-        } catch (Exception e) {
-            log.error("批量删除秒杀商品异常", e);
-            return Result.error("批量删除商品失败：" + e.getMessage());
-        }
-    }
+
 
     @Override
     public Result<FlashSaleProductVO> getProductDetail(Long id) {
@@ -272,25 +219,7 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
         }
     }
     
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> batchEnableProducts(List<Long> ids) {
-        try {
-            int result = productMapper.batchUpdateStatus(ids, 1);
-            if (result > 0) {
-                for (Long id : ids) {
-                    clearProductCache(id);
-                }
-                log.info("批量启用秒杀商品成功，数量：{}", ids.size());
-                return Result.success();
-            } else {
-                return Result.error("批量启用商品失败");
-            }
-        } catch (Exception e) {
-            log.error("批量启用秒杀商品异常", e);
-            return Result.error("批量启用商品失败：" + e.getMessage());
-        }
-    }
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -307,26 +236,6 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
         } catch (Exception e) {
             log.error("禁用秒杀商品异常", e);
             return Result.error("禁用商品失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> batchDisableProducts(List<Long> ids) {
-        try {
-            int result = productMapper.batchUpdateStatus(ids, 0);
-            if (result > 0) {
-                for (Long id : ids) {
-                    clearProductCache(id);
-                }
-                log.info("批量禁用秒杀商品成功，数量：{}", ids.size());
-                return Result.success();
-            } else {
-                return Result.error("批量禁用商品失败");
-            }
-        } catch (Exception e) {
-            log.error("批量禁用秒杀商品异常", e);
-            return Result.error("批量禁用商品失败：" + e.getMessage());
         }
     }
 
@@ -402,102 +311,7 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
             return Result.error("获取商品列表失败：" + e.getMessage());
         }
     }
-    
-    @Override
-    public Result<List<FlashSaleProductVO>> getEndedProducts() {
-        try {
-            List<FlashSaleProduct> products = productMapper.findEndedProducts();
-            List<FlashSaleProductVO> productVOList = products.stream()
-                    .map(this::convertToVO)
-                    .collect(Collectors.toList());
-            return Result.success(productVOList);
-        } catch (Exception e) {
-            log.error("获取已结束的秒杀商品异常", e);
-            return Result.error("获取商品列表失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    public Result<List<FlashSaleProductVO>> getProductsByPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
-        try {
-            List<FlashSaleProduct> products = productMapper.findByPriceRange(minPrice, maxPrice);
-            List<FlashSaleProductVO> productVOList = products.stream()
-                    .map(this::convertToVO)
-                    .collect(Collectors.toList());
-            return Result.success(productVOList);
-        } catch (Exception e) {
-            log.error("根据价格范围获取秒杀商品异常", e);
-            return Result.error("获取商品列表失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    public Result<List<FlashSaleProductVO>> getProductsByTimeRange(Date startTime, Date endTime) {
-        try {
-            // 通过活动的时间范围查找相关活动
-            List<FlashSaleActivity> activities = activityMapper.findByTimeRange(startTime, endTime);
-            
-            if (activities.isEmpty()) {
-                return Result.success(new ArrayList<>());
-            }
-            
-            // 获取活动ID列表
-            List<Long> activityIds = activities.stream()
-                    .map(FlashSaleActivity::getId)
-                    .collect(Collectors.toList());
-            
-            // 根据活动ID列表查询商品
-            List<FlashSaleProduct> products = new ArrayList<>();
-            for (Long activityId : activityIds) {
-                products.addAll(productMapper.findByActivityId(activityId));
-            }
-            
-            List<FlashSaleProductVO> productVOList = products.stream()
-                    .map(this::convertToVO)
-                    .collect(Collectors.toList());
-            
-            return Result.success(productVOList);
-        } catch (Exception e) {
-            log.error("根据时间范围获取秒杀商品异常", e);
-            return Result.error("获取商品列表失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> updateProductPrice(Long id, BigDecimal flashSalePrice) {
-        try {
-            int result = productMapper.updatePrice(id, flashSalePrice);
-            if (result > 0) {
-                clearProductCache(id);
-                log.info("更新秒杀商品价格成功，商品ID：{}", id);
-                return Result.success();
-            } else {
-                return Result.error("更新商品价格失败");
-            }
-        } catch (Exception e) {
-            log.error("更新秒杀商品价格异常", e);
-            return Result.error("更新商品价格失败：" + e.getMessage());
-        }
-    }
-    
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> updateFlashSaleLimit(Long id, Integer flashSaleLimit) {
-        try {
-            int result = productMapper.updateFlashSaleLimit(id, flashSaleLimit);
-            if (result > 0) {
-                clearProductCache(id);
-                log.info("更新秒杀商品限购数量成功，商品ID：{}", id);
-                return Result.success();
-            } else {
-                return Result.error("更新商品限购数量失败");
-            }
-        } catch (Exception e) {
-            log.error("更新秒杀商品限购数量异常", e);
-            return Result.error("更新商品限购数量失败：" + e.getMessage());
-        }
-    }
+
 
     @Override
     public Result<Void> preloadProductsToRedis(Long activityId) {

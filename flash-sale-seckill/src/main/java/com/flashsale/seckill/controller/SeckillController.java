@@ -7,7 +7,6 @@ import com.flashsale.seckill.dto.FlashSaleActivityDTO;
 import com.flashsale.seckill.dto.FlashSaleProductDTO;
 import com.flashsale.seckill.service.FlashSaleActivityService;
 import com.flashsale.seckill.service.FlashSaleProductService;
-import com.flashsale.seckill.service.RateLimitService;
 import com.flashsale.seckill.service.SeckillService;
 import com.flashsale.seckill.vo.FlashSaleActivityVO;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
@@ -18,7 +17,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,9 +40,6 @@ public class SeckillController {
 
     @Autowired
     private FlashSaleProductService productService;
-    
-    @Autowired
-    private RateLimitService rateLimitService;
 
     /**
      * 提交秒杀请求
@@ -53,13 +48,6 @@ public class SeckillController {
     @SentinelResource(value = "doSeckill", blockHandler = "handleBlock")
     public Result<String> doSeckill(@RequestBody @Valid SeckillDTO seckillDTO, HttpServletRequest request) {
         log.info("用户{}执行秒杀，商品ID：{}", seckillDTO.getUserId(), seckillDTO.getFlashSaleProductId());
-        
-        // 限流检查
-        String key = "seckill:" + seckillDTO.getUserId() + ":" + seckillDTO.getFlashSaleProductId();
-        Result<Boolean> allowResult = rateLimitService.isAllowed(key, 5, 60);
-        if (!allowResult.getData()) {
-            return Result.error("访问过于频繁，请稍后再试");
-        }
         
         return seckillService.doSeckill(seckillDTO);
     }
@@ -229,7 +217,9 @@ public class SeckillController {
         private Long userId;
     }
 
-    // Sentinel 阻塞处理方法
+    /** Sentinel 阻塞处理方法
+     *
+     */
     public Result<String> handleBlock(SeckillDTO seckillDTO, HttpServletRequest request, BlockException ex) {
         log.warn("秒杀请求被限流: {}", ex.getMessage());
         return Result.error(429, "系统繁忙，请稍后重试");

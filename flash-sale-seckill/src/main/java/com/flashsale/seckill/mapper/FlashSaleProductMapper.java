@@ -19,21 +19,11 @@ public interface FlashSaleProductMapper {
      * 插入秒杀商品
      */
     int insert(FlashSaleProduct product);
-
-    /**
-     * 批量插入秒杀商品
-     */
-    int batchInsert(List<FlashSaleProduct> products);
-
+    
     /**
      * 根据ID查找秒杀商品
      */
     FlashSaleProduct findById(@Param("id") Long id);
-
-    /**
-     * 根据商品ID查找秒杀商品
-     */
-    List<FlashSaleProduct> findByProductId(@Param("productId") Long productId);
 
     /**
      * 根据ID更新秒杀商品
@@ -46,14 +36,9 @@ public interface FlashSaleProductMapper {
     int deleteById(@Param("id") Long id);
 
     /**
-     * 批量删除秒杀商品
+     * 根据商品ID查找秒杀商品列表
      */
-    int batchDeleteByIds(@Param("ids") List<Long> ids);
-
-    /**
-     * 根据活动ID删除秒杀商品
-     */
-    int deleteByActivityId(@Param("activityId") Long activityId);
+    List<FlashSaleProduct> findByProductId(@Param("productId") Long productId);
 
     /**
      * 根据活动ID查找秒杀商品列表
@@ -102,36 +87,4 @@ public interface FlashSaleProductMapper {
      * 查询即将开始的秒杀商品
      */
     List<FlashSaleProduct> findUpcomingProducts();
-    
-    /**
-     * 查询已结束的秒杀商品
-     */
-    List<FlashSaleProduct> findEndedProducts();
-    
-    /**
-     * 根据价格范围查询秒杀商品
-     */
-    List<FlashSaleProduct> findByPriceRange(@Param("minPrice") BigDecimal minPrice, 
-                                           @Param("maxPrice") BigDecimal maxPrice);
-    
-    /**
-     * 根据时间范围查询秒杀商品
-     */
-    List<FlashSaleProduct> findByTimeRange(@Param("startTime") Date startTime, 
-                                          @Param("endTime") Date endTime);
-    
-    /**
-     * 更新秒杀商品的价格
-     */
-    int updatePrice(@Param("id") Long id, @Param("flashSalePrice") BigDecimal flashSalePrice);
-    
-    /**
-     * 更新秒杀商品的限购数量
-     */
-    int updateFlashSaleLimit(@Param("id") Long id, @Param("flashSaleLimit") Integer flashSaleLimit);
-    
-    /**
-     * 批量更新秒杀商品状态
-     */
-    int batchUpdateStatus(@Param("ids") List<Long> ids, @Param("status") Integer status);
 } 

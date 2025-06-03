@@ -21,11 +21,6 @@ public interface FlashSaleProductService {
     Result<Void> addProduct(FlashSaleProductDTO productDTO);
 
     /**
-     * 批量添加秒杀商品
-     */
-    Result<Void> batchAddProducts(List<FlashSaleProductDTO> productDTOs);
-
-    /**
      * 更新秒杀商品
      */
     Result<Void> updateProduct(Long id, FlashSaleProductDTO productDTO);
@@ -34,11 +29,6 @@ public interface FlashSaleProductService {
      * 删除秒杀商品
      */
     Result<Void> deleteProduct(Long id);
-
-    /**
-     * 批量删除秒杀商品
-     */
-    Result<Void> batchDeleteProducts(List<Long> ids);
 
     /**
      * 根据ID查询商品详情
@@ -71,16 +61,6 @@ public interface FlashSaleProductService {
     Result<Void> disableProduct(Long id);
 
     /**
-     * 批量启用商品
-     */
-    Result<Void> batchEnableProducts(List<Long> ids);
-
-    /**
-     * 批量禁用商品
-     */
-    Result<Void> batchDisableProducts(List<Long> ids);
-
-    /**
      * 扣减商品库存
      */
     Result<Boolean> decreaseStock(Long id, Integer quantity);
@@ -99,31 +79,6 @@ public interface FlashSaleProductService {
      * 获取即将开始的秒杀商品
      */
     Result<List<FlashSaleProductVO>> getUpcomingProducts();
-
-    /**
-     * 获取已结束的秒杀商品
-     */
-    Result<List<FlashSaleProductVO>> getEndedProducts();
-
-    /**
-     * 根据价格范围查询秒杀商品
-     */
-    Result<List<FlashSaleProductVO>> getProductsByPriceRange(BigDecimal minPrice, BigDecimal maxPrice);
-
-    /**
-     * 根据时间范围查询秒杀商品
-     */
-    Result<List<FlashSaleProductVO>> getProductsByTimeRange(Date startTime, Date endTime);
-
-    /**
-     * 更新秒杀商品价格
-     */
-    Result<Void> updateProductPrice(Long id, BigDecimal flashSalePrice);
-
-    /**
-     * 更新秒杀商品限购数量
-     */
-    Result<Void> updateFlashSaleLimit(Long id, Integer flashSaleLimit);
 
     /**
      * 预热秒杀商品到Redis
