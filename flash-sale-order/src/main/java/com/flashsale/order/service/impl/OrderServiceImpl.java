@@ -3,8 +3,6 @@ package com.flashsale.order.service.impl;
 import com.flashsale.common.result.Result;
 import com.flashsale.common.result.ResultCode;
 import com.flashsale.common.dto.SeckillDTO;
-import com.flashsale.common.mq.MessageSender;
-import com.flashsale.common.mq.message.PaymentProcessMessage;
 import com.flashsale.common.mq.RabbitMQConfig;
 import com.flashsale.order.entity.FlashSaleOrder;
 import com.flashsale.order.mapper.FlashSaleOrderMapper;
@@ -33,9 +31,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private FlashSaleOrderMapper flashSaleOrderMapper;
-    
-    @Autowired
-    private MessageSender messageSender;
 
     @Autowired
     @Qualifier("orderRabbitTemplate")
@@ -157,7 +152,7 @@ public class OrderServiceImpl implements OrderService {
             
             // 发送支付处理消息到RabbitMQ
             try {
-                // 创建支付消息对象 - 使用HashMap替代PaymentProcessMessage类
+                // 创建支付消息对象
                 Map<String, Object> paymentMessage = new HashMap<>();
                 paymentMessage.put("orderNo", orderNo);
                 paymentMessage.put("userId", order.getUserId());

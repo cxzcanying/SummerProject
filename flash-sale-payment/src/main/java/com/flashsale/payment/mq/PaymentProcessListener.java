@@ -50,7 +50,8 @@ public class PaymentProcessListener {
             BigDecimal amount = jsonNode.has("amount") ? 
                     new BigDecimal(jsonNode.get("amount").asText()) : null;
             Integer paymentMethod = jsonNode.has("paymentMethod") ? 
-                    jsonNode.get("paymentMethod").asInt() : 2; // 默认微信支付
+                    jsonNode.get("paymentMethod").asInt() : 2;
+            // 默认微信支付
             
             // 验证必要字段
             if (orderNo == null || userId == null || amount == null) {

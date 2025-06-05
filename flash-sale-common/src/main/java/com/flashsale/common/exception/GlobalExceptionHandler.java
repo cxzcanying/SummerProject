@@ -43,7 +43,7 @@ public class GlobalExceptionHandler {
         for (FieldError fieldError : bindingResult.getFieldErrors()) {
             sb.append(fieldError.getDefaultMessage()).append(", ");
         }
-        String message = sb.length() > 0 ? sb.substring(0, sb.length() - 2) : "Parameter validation failed";
+        String message = !sb.isEmpty() ? sb.substring(0, sb.length() - 2) : "参数验证失败";
         
         log.error("Validation exception: {}", message);
         return Result.error(ResultCode.PARAM_ERROR.getCode(), message);
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public Result<Void> handleException(Exception e) {
-        log.error("System exception", e);
-        return Result.error(ResultCode.ERROR.getCode(), "System error: " + e.getMessage());
+        log.error("系统异常", e);
+        return Result.error(ResultCode.ERROR.getCode(), "系统错误: " + e.getMessage());
     }
 } 

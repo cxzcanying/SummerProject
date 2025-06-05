@@ -3,12 +3,16 @@ package com.flashsale.common.exception;
 import com.flashsale.common.result.ResultCode;
 import lombok.Getter;
 
+import java.io.Serial;
+import java.io.Serializable;
+
 /**
  * 交易异常
  * @author 21311
  */
 @Getter
-public class BusinessException extends RuntimeException {
+public class BusinessException extends RuntimeException implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
