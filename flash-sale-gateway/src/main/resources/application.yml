@@ -6,31 +6,33 @@ spring:
     name: flash-sale-gateway
   profiles:
     active: dev
-  config:
-    import: "optional:nacos:flash-sale-gateway-dev.yml"
+#  config:
+#    import: "optional:nacos:flash-sale-gateway-dev.yml"
   cloud:
     nacos:
       discovery:
-        server-addr: 127.0.0.1:8848
-        group: flash-sale
+        server-addr: 127.0.0.1:8848 # Nacos服务发现地址
+        group: flash-sale # 服务分组
       config:
-        server-addr: 127.0.0.1:8848
-        group: flash-sale
+        server-addr: 127.0.0.1:8848 # Nacos配置中心地址
+        group: flash-sale # 配置分组
         file-extension: yml
         name: ${spring.application.name}-${spring.profiles.active}
+  # 进行环境隔离，读取配置文件（可选）
+
     gateway:
       discovery:
         locator:
-          enabled: true
-          lower-case-service-id: true
+          enabled: true  # 启用服务发现定位器
+          lower-case-service-id: true # 服务ID使用小写
       routes:
         # 用户服务路由
         - id: flash-sale-user
           uri: lb://flash-sale-user
-          predicates:
+          predicates: # 路径匹配规则
             - Path=/api/user/**
           filters:
-            - StripPrefix=1
+            - StripPrefix=1  # 去除第一个路径前缀(api)，统一接口，减少微服务之间的路径重复(/api)
         
         # 产品服务路由
         - id: flash-sale-product
@@ -83,7 +85,7 @@ management:
     health:
       show-details: always
     gateway:
-      enabled: true
-
+      enabled: true #网关专属端点
+# actuator配置，为后续全链路监控进行准备
 
 

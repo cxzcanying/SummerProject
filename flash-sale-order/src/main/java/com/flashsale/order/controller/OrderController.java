@@ -62,14 +62,4 @@ public class OrderController {
         return orderService.cancelOrder(orderNo);
     }
 
-    // 内部类定义
-    public static class ApplyCouponRequest {
-        private String orderId;
-        private Long couponId;
-        
-        public String getOrderId() { return orderId; }
-        public void setOrderId(String orderId) { this.orderId = orderId; }
-        public Long getCouponId() { return couponId; }
-        public void setCouponId(Long couponId) { this.couponId = couponId; }
-    }
 } 

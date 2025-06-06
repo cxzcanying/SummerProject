@@ -27,22 +27,6 @@ public class SeckillDTO implements Serializable {
     private Long userId;
 
     /**
-     * 活动ID
-     */
-    @NotNull(message = "活动ID不能为空")
-    private Long activityId;
-
-    /**
-     * 商品ID
-     */
-    @NotNull(message = "商品ID不能为空")
-    private Long productId;
-
-/*
-  其中商品ID和活动ID会冗余，违反了DRY原则，但这样设计避免重复查询数据库的操作，可以减轻数据库压力
-*/
-
-    /**
      * 秒杀商品ID
      */
     @NotNull(message = "秒杀商品ID不能为空")

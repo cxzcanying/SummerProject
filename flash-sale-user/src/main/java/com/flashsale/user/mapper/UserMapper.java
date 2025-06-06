@@ -12,9 +12,11 @@ public interface UserMapper {
     
     /**
      * 根据ID查找用户
+     * @param id 用户ID
+     * @return 用户对象
      */
     User findById(Long id);
-    
+
     /**
      * 根据用户名查找用户
      */

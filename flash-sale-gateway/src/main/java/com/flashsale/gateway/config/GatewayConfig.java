@@ -18,29 +18,31 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 public class GatewayConfig {
 
     /**
-     * 网关路由配置 - 移除Redis限流依赖
+     * 网关路由配置
+     * @author 21311
      */
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         log.info("正在配置网关路由...");
         return builder.routes()
-                // User service - 用户服务
+                // 用户服务
                 .route("user-service", r -> r.path("/api/user/**")
                         .uri("lb://flash-sale-user"))
+                //未来扩容可以进行负载均衡
                 
-                // Product service - 商品服务
+                // 商品服务
                 .route("product-service", r -> r.path("/api/product/**")
                         .uri("lb://flash-sale-product"))
                 
-                // Seckill service - 秒杀服务
+                // 秒杀服务
                 .route("seckill-service", r -> r.path("/api/seckill/**")
                         .uri("lb://flash-sale-seckill"))
                 
-                // Order service - 订单服务
+                // 订单服务
                 .route("order-service", r -> r.path("/api/order/**")
                         .uri("lb://flash-sale-order"))
                 
-                // Payment service - 支付服务
+                // 支付服务
                 .route("payment-service", r -> r.path("/api/payment/**")
                         .uri("lb://flash-sale-payment"))
                 
@@ -54,13 +56,19 @@ public class GatewayConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowCredentials(true);
+        //允许携带凭据
         corsConfiguration.addAllowedOriginPattern("*");
+        //允许来源
         corsConfiguration.addAllowedHeader("*");
+        //允许请求头
         corsConfiguration.addAllowedMethod("*");
+        //允许HTTP方法
         corsConfiguration.setMaxAge(3600L);
+        //非简单请求的预检请求缓存时间（单位：秒）
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfiguration);
+        //将规则绑定到/**路径
 
         return new CorsWebFilter(source);
     }

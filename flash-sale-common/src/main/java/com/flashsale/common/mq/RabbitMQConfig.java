@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * RabbitMQ配置类
+ * RabbitMQ基础配置类 - 提供常量定义和基础配置
  * @author 21311
  */
 @Slf4j
@@ -59,70 +59,7 @@ public class RabbitMQConfig {
      */
     public static final int MAX_RETRY_COUNT = 3;
 
-    // ==================== RabbitTemplate和Factory配置 ====================
-    
-    /**
-     * 配置RabbitTemplate
-     */
-    @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
-        rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
-        // 设置消息序列化器
-        
-        // 开启发送方确认
-        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
-            if (!ack) {
-                log.error("消息发送失败，correlationData: {}, cause: {}", correlationData, cause);
-            } else {
-                log.debug("消息发送成功，correlationData: {}", correlationData);
-            }
-        });
-        // 发送确认机制
-        
-        // 开启发送方回调
-        rabbitTemplate.setReturnsCallback(returned -> {
-            log.error("消息投递失败，returned message: {}, replyCode: {}, replyText: {}, exchange: {}, routingKey: {}",
-                    returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
-                    returned.getExchange(), returned.getRoutingKey());
-        });
-        // 投递失败回调，用于处理消息无法路由到队列的情况
-        
-        // 设置mandatory为true，确保消息必须能路由到队列，当消息无法路由到队列时会触发return callback
-        rabbitTemplate.setMandatory(true);
-        
-        return rabbitTemplate;
-    }
-
-    /**
-     * 配置RabbitListenerContainerFactory
-     */
-    @Bean
-    public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(ConnectionFactory connectionFactory) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
-        factory.setConnectionFactory(connectionFactory);
-        factory.setMessageConverter(new Jackson2JsonMessageConverter());
-        // 设置消息序列化器
-        
-        // 配置预取数量（每个消费者预取的消息数量）
-        factory.setPrefetchCount(10);
-        // 可自定义
-        
-        // 配置并发消费者数量
-        factory.setConcurrentConsumers(3);
-        factory.setMaxConcurrentConsumers(10);
-        //最多10个并发消费者，根据负载自动扩缩容
-        
-        // 配置手动确认模式
-        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
-        
-        // 配置拒绝消息后不重新入队
-        factory.setDefaultRequeueRejected(false);
-        
-        return factory;
-    }
-
-    // ==================== 交换机配置 ====================
+    // ==================== 基础交换机和队列配置 ====================
     
     /**
      * 支付操作直连交换机
@@ -134,8 +71,6 @@ public class RabbitMQConfig {
                 .build();
     }
 
-    // ==================== 队列配置 ====================
-    
     /**
      * 订单状态更新队列
      */
@@ -154,8 +89,6 @@ public class RabbitMQConfig {
                 .build();
     }
 
-    // ==================== 绑定配置 ====================
-    
     /**
      * 绑定订单状态更新队列
      */
@@ -174,5 +107,64 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(paymentProcessQueue())
                 .to(paymentExchange())
                 .with(PAYMENT_PROCESS_ROUTING_KEY);
+    }
+
+    // ==================== 基础配置方法（供子类使用）====================
+    
+    /**
+     * 配置基础RabbitTemplate（包含发送确认和回调机制）
+     * 各服务可以调用此方法来创建具有统一配置的RabbitTemplate
+     */
+    protected RabbitTemplate createBaseRabbitTemplate(ConnectionFactory connectionFactory, 
+                                                     Jackson2JsonMessageConverter messageConverter) {
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        rabbitTemplate.setMessageConverter(messageConverter);
+        
+        // 开启发送方确认
+        rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
+            if (!ack) {
+                log.error("消息发送失败，correlationData: {}, cause: {}", correlationData, cause);
+            } else {
+                log.debug("消息发送成功，correlationData: {}", correlationData);
+            }
+        });
+        
+        // 开启发送方回调
+        rabbitTemplate.setReturnsCallback(returned -> {
+            log.error("消息投递失败，returned message: {}, replyCode: {}, replyText: {}, exchange: {}, routingKey: {}",
+                    returned.getMessage(), returned.getReplyCode(), returned.getReplyText(),
+                    returned.getExchange(), returned.getRoutingKey());
+        });
+        
+        // 设置mandatory为true，确保消息必须能路由到队列
+        rabbitTemplate.setMandatory(true);
+        
+        return rabbitTemplate;
+    }
+
+    /**
+     * 配置基础消息监听器容器工厂
+     * 各服务可以调用此方法来创建具有统一配置的ListenerContainerFactory
+     */
+    protected SimpleRabbitListenerContainerFactory createBaseListenerContainerFactory(
+            ConnectionFactory connectionFactory, Jackson2JsonMessageConverter messageConverter) {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory);
+        factory.setMessageConverter(messageConverter);
+        
+        // 配置预取数量
+        factory.setPrefetchCount(10);
+        
+        // 配置并发消费者数量
+        factory.setConcurrentConsumers(3);
+        factory.setMaxConcurrentConsumers(10);
+        
+        // 配置手动确认模式
+        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        
+        // 配置拒绝消息后不重新入队
+        factory.setDefaultRequeueRejected(false);
+        
+        return factory;
     }
 } 
