@@ -3,8 +3,9 @@ package com.flashsale.seckill.mq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flashsale.common.mq.RabbitMQConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.core.AmqpTemplate;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,9 +21,11 @@ import java.util.Map;
 public class PaymentMessageProducer {
 
     @Autowired
-    private AmqpTemplate amqpTemplate;
+    @Qualifier("seckillRabbitTemplate")
+    private RabbitTemplate rabbitTemplate;
     
     @Autowired
+    @Qualifier("seckillObjectMapper")
     private ObjectMapper objectMapper;
 
     /**
@@ -41,7 +44,7 @@ public class PaymentMessageProducer {
             
             log.info("发送支付消息: {}", messageJson);
             
-            amqpTemplate.convertAndSend(
+            rabbitTemplate.convertAndSend(
                 RabbitMQConfig.PAYMENT_EXCHANGE,
                 RabbitMQConfig.PAYMENT_PROCESS_ROUTING_KEY,
                 messageJson

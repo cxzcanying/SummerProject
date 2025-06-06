@@ -32,13 +32,6 @@
         create_time, update_time
     </sql>
 
-    <!-- 根据ID查找订单 -->
-    <select id="findById" parameterType="long" resultMap="orderResultMap">
-        SELECT <include refid="baseColumns"/>
-        FROM flash_sale_order 
-        WHERE id = #{id}
-    </select>
-
     <!-- 根据订单号查找订单 -->
     <select id="findByOrderNo" parameterType="string" resultMap="orderResultMap">
         SELECT <include refid="baseColumns"/>
@@ -98,11 +91,6 @@
         WHERE id = #{id}
     </update>
 
-    <!-- 根据ID删除订单 -->
-    <delete id="deleteById" parameterType="long">
-        DELETE FROM flash_sale_order WHERE id = #{id}
-    </delete>
-
     <!-- 更新订单状态 -->
     <update id="updateStatus">
         UPDATE flash_sale_order SET
@@ -110,5 +98,12 @@
             update_time = NOW()
         WHERE id = #{id}
     </update>
+
+    <!-- 根据订单ID查找订单 -->
+    <select id="findById" parameterType="long" resultMap="orderResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM flash_sale_order 
+        WHERE id = #{id}
+    </select>
 
 </mapper> 

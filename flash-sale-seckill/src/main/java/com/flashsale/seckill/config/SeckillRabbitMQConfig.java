@@ -1,4 +1,4 @@
-package com.flashsale.order.config;
+package com.flashsale.seckill.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -12,55 +12,52 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 /**
- * 订单服务RabbitMQ配置类 - 继承基础配置，添加订单服务特有配置
+ * 秒杀服务RabbitMQ配置类 - 继承基础配置，添加秒杀服务特有配置
  * @author 21311
  */
 @Configuration
 @EnableRabbit
-public class OrderRabbitMQConfig extends RabbitMQConfig {
+public class SeckillRabbitMQConfig extends RabbitMQConfig {
 
     /**
-     * 订单服务专用的ObjectMapper配置
+     * 秒杀服务专用的ObjectMapper配置
      */
-    @Bean("orderObjectMapper")
-    public ObjectMapper orderObjectMapper() {
+    @Bean("seckillObjectMapper")
+    public ObjectMapper seckillObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        //禁用时间戳格式，使用ISO-8601格式(如"2023-08-20T14:30:45Z")
         return objectMapper;
     }
-    //
 
     /**
-     * 订单服务专用的JSON消息转换器
+     * 秒杀服务专用的JSON消息转换器
      */
-    @Bean("orderJsonMessageConverter")
-    public MessageConverter orderJsonMessageConverter() {
-        return new Jackson2JsonMessageConverter(orderObjectMapper());
+    @Bean("seckillJsonMessageConverter")
+    public MessageConverter seckillJsonMessageConverter() {
+        return new Jackson2JsonMessageConverter(seckillObjectMapper());
     }
     
     /**
-     * 订单服务专用的RabbitTemplate
+     * 秒杀服务专用的RabbitTemplate
      * 使用基础配置方法，确保具有完整的发送确认和回调机制
      */
-    @Bean("orderRabbitTemplate")
-    public RabbitTemplate orderRabbitTemplate(ConnectionFactory connectionFactory) {
+    @Bean("seckillRabbitTemplate")
+    public RabbitTemplate seckillRabbitTemplate(ConnectionFactory connectionFactory) {
         return createBaseRabbitTemplate(connectionFactory, 
-                (Jackson2JsonMessageConverter) orderJsonMessageConverter());
+                (Jackson2JsonMessageConverter) seckillJsonMessageConverter());
     }
     
     /**
-     * 订单服务专用的消息监听器容器工厂
+     * 秒杀服务专用的消息监听器容器工厂
      * 使用基础配置方法，确保具有统一的消费者配置
      */
-    @Bean("orderRabbitListenerContainerFactory")
-    public SimpleRabbitListenerContainerFactory orderRabbitListenerContainerFactory(
+    @Bean("seckillRabbitListenerContainerFactory")
+    public SimpleRabbitListenerContainerFactory seckillRabbitListenerContainerFactory(
             ConnectionFactory connectionFactory) {
         return createBaseListenerContainerFactory(connectionFactory, 
-                (Jackson2JsonMessageConverter) orderJsonMessageConverter());
+                (Jackson2JsonMessageConverter) seckillJsonMessageConverter());
     }
 } 

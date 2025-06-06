@@ -110,5 +110,4 @@ public class PaymentController {
     public Result<String> cancelPayment(@PathVariable String paymentNo) {
         return paymentService.cancelPayment(paymentNo);
     }
-    //TODO 完成支付接口调用
 } 

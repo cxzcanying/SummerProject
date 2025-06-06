@@ -13,12 +13,9 @@ import java.util.List;
 public interface FlashSaleOrderMapper {
     
     /**
-     * 根据ID查找订单
-     */
-    FlashSaleOrder findById(Long id);
-    
-    /**
      * 根据订单号查找订单
+     * @param orderNo 订单编号
+     * @return 秒杀订单实体类
      */
     FlashSaleOrder findByOrderNo(String orderNo);
     
@@ -43,12 +40,14 @@ public interface FlashSaleOrderMapper {
     int updateById(FlashSaleOrder order);
     
     /**
-     * 根据ID删除订单
-     */
-    int deleteById(Long id);
-    
-    /**
      * 更新订单状态
      */
     int updateStatus(Long id, Integer status);
+    
+    /**
+     * 根据订单ID查找订单
+     * @param id 订单ID
+     * @return 秒杀订单实体类
+     */
+    FlashSaleOrder findById(Long id);
 } 

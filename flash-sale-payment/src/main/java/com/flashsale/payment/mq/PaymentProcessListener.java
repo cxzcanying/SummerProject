@@ -10,11 +10,15 @@ import com.rabbitmq.client.Channel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 支付处理消息监听器 - 直接处理消息内容
@@ -30,7 +34,12 @@ public class PaymentProcessListener {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @RabbitListener(queues = RabbitMQConfig.PAYMENT_PROCESS_QUEUE)
+    @Autowired
+    @Qualifier("paymentRabbitTemplate")
+    private RabbitTemplate rabbitTemplate;
+
+    @RabbitListener(queues = RabbitMQConfig.PAYMENT_PROCESS_QUEUE, 
+                    containerFactory = "paymentRabbitListenerContainerFactory")
     public void onMessage(Message message, Channel channel) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         
@@ -76,6 +85,28 @@ public class PaymentProcessListener {
             
             if (result.getCode() == 200) {
                 log.info("支付处理成功，订单号: {}，消息: {}", orderNo, result.getMessage());
+                
+                // 发送订单状态更新消息
+                try {
+                    Map<String, Object> statusUpdateMessage = new HashMap<>();
+                    statusUpdateMessage.put("orderNo", orderNo);
+                    statusUpdateMessage.put("status", 1);
+                    // 已支付状态
+                    statusUpdateMessage.put("paymentId", result.getData());
+                    statusUpdateMessage.put("timestamp", System.currentTimeMillis());
+                    
+                    rabbitTemplate.convertAndSend(
+                        RabbitMQConfig.PAYMENT_EXCHANGE,
+                        RabbitMQConfig.ORDER_STATUS_UPDATE_ROUTING_KEY,
+                        statusUpdateMessage
+                    );
+                    
+                    log.info("订单状态更新消息发送成功，订单号: {}", orderNo);
+                } catch (Exception e) {
+                    log.error("发送订单状态更新消息失败，订单号: {}", orderNo, e);
+                    // 不影响支付确认，但记录错误
+                }
+                
                 // 确认消息
                 channel.basicAck(deliveryTag, false);
             } else {
@@ -98,14 +129,15 @@ public class PaymentProcessListener {
      */
     private Long generateOrderId(String orderNo) {
         try {
-            if (orderNo != null && orderNo.startsWith("FS")) {
+            String index = "FS";
+            if (orderNo != null && orderNo.startsWith(index)) {
                 // 从订单号中提取时间戳部分
                 String timestampStr = orderNo.substring(2, Math.min(15, orderNo.length()));
                 Long timestamp = Long.parseLong(timestampStr);
                 
                 // 结合订单号的哈希值，确保唯一性
                 int hashCode = Math.abs(orderNo.hashCode());
-                // 取哈希值的后6位，避免太大
+                // 取哈希值的后面6位，避免太大
                 long hashSuffix = hashCode % 1000000;
                 
                 // 组合时间戳和哈希值

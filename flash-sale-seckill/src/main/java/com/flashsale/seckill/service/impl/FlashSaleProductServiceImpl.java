@@ -9,6 +9,8 @@ import com.flashsale.seckill.mapper.FlashSaleActivityMapper;
 import com.flashsale.seckill.mapper.FlashSaleProductMapper;
 import com.flashsale.seckill.service.FlashSaleProductService;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * 秒杀商品服务实现类
@@ -40,6 +43,9 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    
+    @Autowired
+    private RestTemplate restTemplate;
 
     private static final String SECKILL_PRODUCT_KEY = "seckill:product:";
     private static final String SECKILL_STOCK_KEY = "seckill:stock:";
@@ -448,57 +454,26 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
         // 设置状态名称
         productVO.setStatusName(product.getStatus() == 1 ? "启用" : "禁用");
         
-        // 获取商品名称等信息
+        // 获取商品基础信息
         try {
-            // 使用商品ID获取商品详情并补充缺失字段
             if (product.getProductId() != null) {
-                // 从product表获取商品信息 (假设有一个方法可以根据ID获取商品信息)
-                // Product productInfo = productInfoMapper.findById(product.getProductId());
-                // 这里是模拟从数据库获取，实际项目中应从真实的商品表获取
+                // 调用商品服务获取真实的商品信息
+                ProductInfo productInfo = getProductInfo(product.getProductId());
                 
-                // 如果productName为空，设置默认值
-                if (productVO.getProductName() == null || productVO.getProductName().isEmpty()) {
-                    // 实际应该使用 productInfo.getName()
-                    productVO.setProductName("商品" + product.getProductId());
-                    log.info("为商品ID: {}设置默认商品名称", product.getId());
-                }
-                
-                // 如果productImage为空，设置默认值
-                if (productVO.getProductImage() == null || productVO.getProductImage().isEmpty()) {
-                    // 实际应该使用 productInfo.getImage()
-                    productVO.setProductImage("");
-                    log.info("为商品ID: {}设置默认商品图片", product.getId());
-                }
-                
-                // 如果originalPrice为空，使用flashSalePrice
-                if (productVO.getOriginalPrice() == null) {
-                    // 实际应该使用 productInfo.getPrice()
-                    if (product.getFlashSalePrice() != null) {
-                        // 如果有秒杀价格，原价设为秒杀价格的1.2倍
-                        productVO.setOriginalPrice(product.getFlashSalePrice().multiply(new BigDecimal("1.2")));
-                    } else {
-                        productVO.setOriginalPrice(new BigDecimal("0.00"));
-                    }
-                    log.info("为商品ID: {}设置默认原价", product.getId());
+                if (productInfo != null) {
+                    // 使用真实的商品信息
+                    productVO.setProductName(productInfo.getName());
+                    productVO.setProductImage(productInfo.getMainImage());
+                    productVO.setOriginalPrice(productInfo.getPrice());
+                    
+                    log.debug("成功获取商品信息：{}", productInfo.getName());
+                } else {
+                    // 降级处理
+                    setDefaultProductInfo(productVO, product);
                 }
             } else {
-                // 如果没有关联商品ID，设置默认值
-                if (productVO.getProductName() == null || productVO.getProductName().isEmpty()) {
-                    productVO.setProductName("未知商品");
-                    log.info("商品ID: {}没有关联商品ID，设置默认商品名称", product.getId());
-                }
-                
-                if (productVO.getProductImage() == null) {
-                    productVO.setProductImage("");
-                }
-                
-                if (productVO.getOriginalPrice() == null) {
-                    if (product.getFlashSalePrice() != null) {
-                        productVO.setOriginalPrice(product.getFlashSalePrice().multiply(new BigDecimal("1.2")));
-                    } else {
-                        productVO.setOriginalPrice(new BigDecimal("0.00"));
-                    }
-                }
+                // 没有关联商品ID，使用默认值
+                setDefaultProductInfo(productVO, product);
             }
         } catch (Exception e) {
             log.error("获取商品基本信息失败, 商品ID: {}", product.getId(), e);
@@ -564,6 +539,83 @@ public class FlashSaleProductServiceImpl implements FlashSaleProductService {
         }
         
         return productVO;
+    }
+    
+    /**
+     * 获取商品基础信息
+     */
+    private ProductInfo getProductInfo(Long productId) {
+        try {
+            // 调用商品服务获取商品信息
+            String url = "http://localhost:8082/api/product/detail/" + productId;
+            Map response = restTemplate.getForObject(url, Map.class);
+            
+            if (response != null && response.get("code").equals(200)) {
+                Map<String, Object> data = (Map<String, Object>) response.get("data");
+
+                ProductInfo productInfo = new ProductInfo();
+                productInfo.setName((String) data.get("name"));
+                productInfo.setMainImage((String) data.get("mainImage"));
+                
+                // 处理价格
+                Object priceObj = data.get("price");
+                if (priceObj instanceof Integer) {
+                    productInfo.setPrice(new BigDecimal((Integer) priceObj));
+                } else if (priceObj instanceof Double) {
+                    productInfo.setPrice(BigDecimal.valueOf((Double) priceObj));
+                } else if (priceObj instanceof String) {
+                    productInfo.setPrice(new BigDecimal((String) priceObj));
+                } else {
+                    productInfo.setPrice(new BigDecimal("0.00"));
+                }
+                
+                return productInfo;
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.warn("获取商品信息失败，productId：{}", productId, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 设置默认商品信息（降级处理）
+     */
+    private void setDefaultProductInfo(FlashSaleProductVO productVO, FlashSaleProduct product) {
+        // 设置默认商品名称
+        if (productVO.getProductName() == null || productVO.getProductName().isEmpty()) {
+            productVO.setProductName("商品" + (product.getProductId() != null ? product.getProductId() : product.getId()));
+        }
+        
+        // 设置默认商品图片
+        if (productVO.getProductImage() == null || productVO.getProductImage().isEmpty()) {
+            productVO.setProductImage("default.jpg");
+        }
+        
+        // 设置默认原价
+        if (productVO.getOriginalPrice() == null) {
+            if (product.getFlashSalePrice() != null) {
+                // 原价设为秒杀价格的1.2倍
+                productVO.setOriginalPrice(product.getFlashSalePrice().multiply(new BigDecimal("1.2")));
+            } else {
+                productVO.setOriginalPrice(new BigDecimal("99.99"));
+            }
+        }
+        
+        log.debug("使用默认商品信息，商品ID：{}", product.getId());
+    }
+    
+    /**
+     * 商品基础信息内部类
+     */
+    @Getter
+    @Setter
+    private static class ProductInfo {
+        private String name;
+        private String mainImage;
+        private BigDecimal price;
+
     }
 
     /**

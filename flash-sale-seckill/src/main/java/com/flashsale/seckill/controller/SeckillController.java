@@ -217,8 +217,8 @@ public class SeckillController {
         private Long userId;
     }
 
-    /** Sentinel 阻塞处理方法
-     *
+    /**
+     * Sentinel 阻塞处理方法
      */
     public Result<String> handleBlock(SeckillDTO seckillDTO, HttpServletRequest request, BlockException ex) {
         log.warn("秒杀请求被限流: {}", ex.getMessage());

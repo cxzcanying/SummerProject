@@ -5,6 +5,8 @@ import lombok.Data;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -15,6 +17,7 @@ import java.util.Date;
  */
 @Data
 public class FlashSaleProductDTO implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**

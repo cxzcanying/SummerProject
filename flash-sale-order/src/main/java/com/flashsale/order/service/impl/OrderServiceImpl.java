@@ -131,7 +131,8 @@ public class OrderServiceImpl implements OrderService {
                 Date expireTime = new Date(order.getCreateTime().getTime() + 30 * 60 * 1000);
                 if (new Date().after(expireTime)) {
                     // 自动取消过期订单
-                    flashSaleOrderMapper.updateStatus(order.getId(), 4); // 已取消
+                    flashSaleOrderMapper.updateStatus(order.getId(), 4);
+                    // 已取消
                     return Result.error(ResultCode.ORDER_EXPIRED.getCode(), "订单已过期");
                 }
             }
@@ -209,59 +210,28 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> completeOrder(String orderNo) {
-        try {
-            FlashSaleOrder order = flashSaleOrderMapper.findByOrderNo(orderNo);
-            if (order == null) {
-                return Result.error(ResultCode.ORDER_NOT_EXIST.getCode(), "订单不存在");
-            }
-            
-            if (order.getStatus() != 1 && order.getStatus() != 2) {
-                return Result.error(ResultCode.ORDER_STATUS_ERROR.getCode(), "订单状态错误，只有已支付或已发货订单才能完成");
-            }
-            
-            // 更新订单状态为已完成
-            int rows = flashSaleOrderMapper.updateStatus(order.getId(), 3);
-            if (rows != 1) {
-                return Result.error(ResultCode.ERROR.getCode(), "完成订单失败");
-            }
-            
-            log.info("订单完成成功，订单号：{}", orderNo);
-            return Result.success();
-            
-        } catch (Exception e) {
-            log.error("完成订单失败", e);
-            return Result.error(ResultCode.ERROR.getCode(), "完成订单失败");
-        }
-    }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public Result<Void> handleExpiredOrder(String orderNo) {
+    public Result<String> getOrderNoByOrderId(Long orderId) {
         try {
-            FlashSaleOrder order = flashSaleOrderMapper.findByOrderNo(orderNo);
+            if (orderId == null) {
+                return Result.error(ResultCode.PARAM_ERROR.getCode(), "订单ID不能为空");
+            }
+            
+            // 根据订单ID查询订单
+            FlashSaleOrder order = flashSaleOrderMapper.findById(orderId);
             if (order == null) {
+                log.warn("根据订单ID未找到订单，orderId：{}", orderId);
                 return Result.error(ResultCode.ORDER_NOT_EXIST.getCode(), "订单不存在");
             }
             
-            if (order.getStatus() == 0 && order.getCreateTime() != null) {
-                // 计算过期时间（创建时间30分钟后）
-                Date expireTime = new Date(order.getCreateTime().getTime() + 30 * 60 * 1000);
-                
-                if (new Date().after(expireTime)) {
-                    // 自动取消过期订单
-                    flashSaleOrderMapper.updateStatus(order.getId(), 5); // 已超时
-                    log.info("自动取消过期订单，订单号：{}", orderNo);
-                }
-            }
-            
-            return Result.success();
+            // 返回真实的订单号
+            log.info("成功获取订单号，orderId：{}，orderNo：{}", orderId, order.getOrderNo());
+            return Result.success(order.getOrderNo());
             
         } catch (Exception e) {
-            log.error("处理过期订单失败", e);
-            return Result.error(ResultCode.ERROR.getCode(), "处理过期订单失败");
+            log.error("根据订单ID获取订单号失败，orderId：{}", orderId, e);
+            return Result.error(ResultCode.ERROR.getCode(), "获取订单号失败");
         }
     }
 

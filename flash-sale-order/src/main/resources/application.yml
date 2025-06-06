@@ -21,10 +21,10 @@ spring:
       timeout: 10000
       lettuce:
         pool:
-          max-active: 8
-          max-wait: -1
-          max-idle: 8
-          min-idle: 0
+          max-active: 8 # 并发连接数上限
+          max-wait: -1 #获取连接的最大等待时间
+          max-idle: 8 #最大空闲连接数
+          min-idle: 0 #最小空闲连接数
   rabbitmq:
     host: 127.0.0.1
     port: 5672

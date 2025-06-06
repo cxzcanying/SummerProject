@@ -62,4 +62,12 @@ public class OrderController {
         return orderService.cancelOrder(orderNo);
     }
 
+    /**
+     * 根据订单ID获取订单号（供其他服务调用）
+     */
+    @GetMapping("/internal/orderNo/{orderId}")
+    public Result<String> getOrderNoByOrderId(@PathVariable Long orderId) {
+        return orderService.getOrderNoByOrderId(orderId);
+    }
+
 } 

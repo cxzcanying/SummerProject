@@ -62,18 +62,11 @@ public interface OrderService {
     Result<Void> cancelOrder(String orderNo);
 
     /**
-     * 完成订单
+     * 根据订单ID获取订单号
      *
-     * @param orderNo 订单号
-     * @return 完成结果
+     * @param orderId 订单ID
+     * @return 订单号
      */
-    Result<Void> completeOrder(String orderNo);
+    Result<String> getOrderNoByOrderId(Long orderId);
 
-    /**
-     * 订单超时处理
-     *
-     * @param orderNo 订单号
-     * @return 处理结果
-     */
-    Result<Void> handleExpiredOrder(String orderNo);
 } 

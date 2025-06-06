@@ -7,6 +7,7 @@ import com.flashsale.payment.entity.Payment;
 import com.flashsale.payment.mapper.PaymentMapper;
 import com.flashsale.payment.service.PaymentService;
 import com.flashsale.payment.vo.PaymentVO;
+import com.flashsale.payment.feign.OrderServiceClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+    
+    @Autowired
+    private OrderServiceClient orderServiceClient;
 
     private static final String PAYMENT_CACHE_KEY = "payment:";
     private static final long CACHE_EXPIRE_TIME = 30;
@@ -65,11 +69,13 @@ public class PaymentServiceImpl implements PaymentService {
             Payment payment = new Payment();
             BeanUtils.copyProperties(paymentDTO, payment);
             
-            // 生成订单号 - 实际使用中应该通过Feign调用OrderService获取真实的orderNo
-            payment.setOrderNo("FS" + System.currentTimeMillis() + UUID.randomUUID().toString().replace("-", "").substring(0, 8));
+            // 通过Feign调用OrderService获取orderNo
+            String realOrderNo = getRealOrderNo(paymentDTO.getOrderId());
+            payment.setOrderNo(realOrderNo);
             
             payment.setPaymentNo(generatePaymentNo());
-            payment.setStatus(0); // 待支付
+            payment.setStatus(0);
+            // 待支付
             payment.setCreateTime(new Date());
             payment.setUpdateTime(new Date());
 
@@ -323,6 +329,37 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
+     * 通过Feign调用获取真实订单号
+     */
+    private String getRealOrderNo(Long orderId) {
+        try {
+            log.info("开始通过Feign调用获取订单号，orderId：{}", orderId);
+            Result<String> result = orderServiceClient.getOrderNoByOrderId(orderId);
+            
+            if (result != null && result.getCode() == 200 && result.getData() != null) {
+                String orderNo = result.getData();
+                log.info("成功获取真实订单号：{}，orderId：{}", orderNo, orderId);
+                return orderNo;
+            } else {
+                log.warn("Feign调用获取订单号失败，使用降级方案，orderId：{}，响应：{}", orderId, result);
+                return getFallbackOrderNo(orderId);
+            }
+        } catch (Exception e) {
+            log.error("Feign调用获取订单号异常，使用降级方案，orderId：{}", orderId, e);
+            return getFallbackOrderNo(orderId);
+        }
+    }
+    
+    /**
+     * 降级方案：生成默认订单号
+     */
+    private String getFallbackOrderNo(Long orderId) {
+        String fallbackOrderNo = "FS" + orderId + System.currentTimeMillis();
+        log.warn("使用降级订单号：{}，orderId：{}", fallbackOrderNo, orderId);
+        return fallbackOrderNo;
+    }
+
+    /**
      * 生成支付流水号
      */
     private String generatePaymentNo() {
@@ -358,34 +395,25 @@ public class PaymentServiceImpl implements PaymentService {
      * 获取支付方式名称
      */
     private String getPaymentMethodName(Integer paymentMethod) {
-        switch (paymentMethod) {
-            case 1:
-                return "支付宝";
-            case 2:
-                return "微信支付";
-            case 3:
-                return "银行卡";
-            default:
-                return "未知";
-        }
+        return switch (paymentMethod) {
+            case 1 -> "支付宝";
+            case 2 -> "微信支付";
+            case 3 -> "银行卡";
+            default -> "未知";
+        };
     }
 
     /**
      * 获取状态名称
      */
     private String getStatusName(Integer status) {
-        switch (status) {
-            case 0:
-                return "待支付";
-            case 1:
-                return "支付成功";
-            case 2:
-                return "支付失败";
-            case 3:
-                return "已退款";
-            default:
-                return "未知";
-        }
+        return switch (status) {
+            case 0 -> "待支付";
+            case 1 -> "支付成功";
+            case 2 -> "支付失败";
+            case 3 -> "已退款";
+            default -> "未知";
+        };
     }
 
     /**
@@ -458,15 +486,11 @@ public class PaymentServiceImpl implements PaymentService {
      * 获取支付回调消息
      */
     private String getPaymentCallbackMessage(Integer status) {
-        switch (status) {
-            case 1:
-                return "支付成功";
-            case 2:
-                return "支付失败";
-            case 0:
-                return "支付处理中";
-            default:
-                return "支付状态未知";
-        }
+        return switch (status) {
+            case 1 -> "支付成功";
+            case 2 -> "支付失败";
+            case 0 -> "支付处理中";
+            default -> "支付状态未知";
+        };
     }
 } 

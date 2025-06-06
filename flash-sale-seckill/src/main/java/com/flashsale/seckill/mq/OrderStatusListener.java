@@ -34,7 +34,8 @@ public class OrderStatusListener {
     
     private static final String SECKILL_RESULT_KEY = "seckill:result:";
 
-    @RabbitListener(queues = RabbitMQConfig.ORDER_STATUS_UPDATE_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.ORDER_STATUS_UPDATE_QUEUE,
+                    containerFactory = "seckillRabbitListenerContainerFactory")
     public void onOrderStatusUpdate(Message message, Channel channel) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
         
