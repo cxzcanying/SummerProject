@@ -16,12 +16,23 @@ import java.util.List;
 public interface PaymentService {
 
     /**
-     * 创建支付订单
+     * 创建支付订单（通过订单ID）
      *
      * @param paymentDTO 支付信息
      * @return 支付结果
      */
     Result<PaymentVO> createPayment(PaymentDTO paymentDTO);
+
+    /**
+     * 直接通过订单号创建支付订单（用于MQ消息处理）
+     *
+     * @param orderNo 订单号
+     * @param userId 用户ID
+     * @param amount 支付金额
+     * @param paymentMethod 支付方式
+     * @return 支付结果
+     */
+    Result<PaymentVO> createPaymentByOrderNo(String orderNo, Long userId, BigDecimal amount, Integer paymentMethod);
 
     /**
      * 处理支付回调

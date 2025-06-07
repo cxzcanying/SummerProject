@@ -8,11 +8,11 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * RabbitMQ基础配置类 - 提供常量定义和基础配置
+ * RabbitMQ基础配置类 - 提供常量定义和基础配置方法
+ * 各服务可以继承此类来获取通用的配置方法和常量
  * @author 21311
  */
 @Slf4j
@@ -27,6 +27,11 @@ public class RabbitMQConfig {
      * 支付操作交换机 - 用于支付相关操作
      */
     public static final String PAYMENT_EXCHANGE = "payment.exchange";
+
+    /**
+     * 死信交换机 - 用于处理失败的消息
+     */
+    public static final String DEAD_LETTER_EXCHANGE = "dlx.exchange";
 
     // ==================== 队列名称常量 ====================
     
@@ -59,58 +64,62 @@ public class RabbitMQConfig {
      */
     public static final int MAX_RETRY_COUNT = 3;
 
-    // ==================== 基础交换机和队列配置 ====================
+    // ==================== 工厂方法（供子类使用）====================
     
     /**
-     * 支付操作直连交换机
+     * 创建支付操作直连交换机
      */
-    @Bean
-    public DirectExchange paymentExchange() {
+    protected DirectExchange createPaymentExchange() {
         return ExchangeBuilder.directExchange(PAYMENT_EXCHANGE)
                 .durable(true)
                 .build();
     }
 
     /**
-     * 订单状态更新队列
+     * 创建死信交换机
      */
-    @Bean
-    public Queue orderStatusUpdateQueue() {
+    protected DirectExchange createDeadLetterExchange() {
+        return ExchangeBuilder.directExchange(DEAD_LETTER_EXCHANGE)
+                .durable(true)
+                .build();
+    }
+
+    /**
+     * 创建订单状态更新队列
+     */
+    protected Queue createOrderStatusUpdateQueue() {
         return QueueBuilder.durable(ORDER_STATUS_UPDATE_QUEUE)
+                .withArgument("x-dead-letter-exchange", "dlx.exchange")
                 .build();
     }
 
     /**
-     * 支付处理队列
+     * 创建支付处理队列
      */
-    @Bean
-    public Queue paymentProcessQueue() {
+    protected Queue createPaymentProcessQueue() {
         return QueueBuilder.durable(PAYMENT_PROCESS_QUEUE)
+                .withArgument("x-dead-letter-exchange", "dlx.exchange")
                 .build();
     }
 
     /**
-     * 绑定订单状态更新队列
+     * 创建订单状态更新绑定
      */
-    @Bean
-    public Binding orderStatusUpdateBinding() {
-        return BindingBuilder.bind(orderStatusUpdateQueue())
-                .to(paymentExchange())
+    protected Binding createOrderStatusUpdateBinding(DirectExchange paymentExchange, Queue orderStatusUpdateQueue) {
+        return BindingBuilder.bind(orderStatusUpdateQueue)
+                .to(paymentExchange)
                 .with(ORDER_STATUS_UPDATE_ROUTING_KEY);
     }
 
     /**
-     * 绑定支付处理队列
+     * 创建支付处理绑定
      */
-    @Bean
-    public Binding paymentProcessBinding() {
-        return BindingBuilder.bind(paymentProcessQueue())
-                .to(paymentExchange())
+    protected Binding createPaymentProcessBinding(DirectExchange paymentExchange, Queue paymentProcessQueue) {
+        return BindingBuilder.bind(paymentProcessQueue)
+                .to(paymentExchange)
                 .with(PAYMENT_PROCESS_ROUTING_KEY);
     }
 
-    // ==================== 基础配置方法（供子类使用）====================
-    
     /**
      * 配置基础RabbitTemplate（包含发送确认和回调机制）
      * 各服务可以调用此方法来创建具有统一配置的RabbitTemplate

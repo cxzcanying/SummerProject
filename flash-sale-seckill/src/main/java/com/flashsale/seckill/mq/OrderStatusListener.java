@@ -70,11 +70,16 @@ public class OrderStatusListener {
                 
                 // 更新Redis中的秒杀结果
                 String status = switch (newStatus) {
-                    case 1 -> "PAID";     // 已支付
-                    case 2 -> "SHIPPED";  // 已发货
-                    case 3 -> "COMPLETED";// 已完成
-                    case 4 -> "CANCELLED";// 已取消
-                    case 5 -> "TIMEOUT";  // 已超时
+                    case 1 -> "PAID";
+                    // 已支付
+                    case 2 -> "SHIPPED";
+                    // 已发货
+                    case 3 -> "COMPLETED";
+                    // 已完成
+                    case 4 -> "CANCELLED";
+                    // 已取消
+                    case 5 -> "TIMEOUT";
+                    // 已超时
                     default -> "UNKNOWN";
                 };
                 

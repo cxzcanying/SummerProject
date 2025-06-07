@@ -13,6 +13,7 @@ import com.flashsale.seckill.service.SeckillService;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
 import com.flashsale.seckill.vo.SeckillOrderVO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,8 @@ public class SeckillServiceImpl implements SeckillService {
     private static final String SECKILL_RESULT_KEY = "seckill:result:";
     private static final String SECKILL_TOKEN_KEY = "seckill:token:";
     private static final long ORDER_EXPIRE_MINUTES = 30;
+    @Autowired
+    private SeckillOrderMapper seckillOrderMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -119,10 +122,10 @@ public class SeckillServiceImpl implements SeckillService {
             orderMapper.insert(order);
 
             // 5. 缓存秒杀结果
-            String seckillId = orderNo; // 使用订单号作为秒杀ID
-            redisTemplate.opsForValue().set(SECKILL_RESULT_KEY + seckillId, "SUCCESS", 24, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(SECKILL_RESULT_KEY + orderNo, "SUCCESS", 24, TimeUnit.HOURS);
+            // 使用订单号作为秒杀ID
 
-            return Result.success(seckillId);
+            return Result.success(orderNo);
         } catch (Exception e) {
             log.error("执行秒杀异常", e);
             return Result.error("秒杀失败：" + e.getMessage());
@@ -260,7 +263,7 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public Result<PageResult<SeckillOrderVO>> getUserSeckillOrders(Long userId, Integer status, Integer page, Integer size) {
         try {
-            // 简化实现，直接返回空列表
+            // TODO 简化实现，直接返回空列表
             return Result.success(new PageResult<>(new ArrayList<>(), 0L, page, size));
         } catch (Exception e) {
             log.error("获取用户秒杀订单异常", e);
@@ -316,11 +319,26 @@ public class SeckillServiceImpl implements SeckillService {
     @Override
     public Result<SeckillOrderVO> getSeckillOrderDetail(String orderNo) {
         try {
-            // 简化实现
-            return Result.error("暂未实现");
+            SeckillOrder seckillOrder = seckillOrderMapper.findByOrderNo(orderNo);
+            if (seckillOrder == null) {
+                return Result.error("订单不存在");
+            }
+
+            SeckillOrderVO seckillOrderVO = convertToVO(seckillOrder);
+            return Result.success(seckillOrderVO);
         } catch (Exception e) {
             log.error("获取秒杀订单详情异常", e);
             return Result.error("获取订单详情失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 转换为VO
+     */
+    private SeckillOrderVO convertToVO(SeckillOrder seckillOrder) {
+        SeckillOrderVO seckillOrderVO = new SeckillOrderVO();
+        BeanUtils.copyProperties(seckillOrder, seckillOrderVO);
+
+        return seckillOrderVO;
     }
 } 

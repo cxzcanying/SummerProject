@@ -73,15 +73,8 @@ public class PaymentProcessListener {
             log.info("解析成功: 订单号={}, 用户ID={}, 金额={}, 支付方式={}", 
                     orderNo, userId, amount, paymentMethod);
             
-            // 创建支付DTO
-            PaymentDTO paymentDTO = new PaymentDTO();
-            paymentDTO.setOrderId(generateOrderId(orderNo));
-            paymentDTO.setUserId(userId);
-            paymentDTO.setAmount(amount);
-            paymentDTO.setPaymentMethod(paymentMethod);
-            
-            // 调用支付服务创建支付记录
-            Result<?> result = paymentService.createPayment(paymentDTO);
+            // 直接调用新的方法，使用订单号创建支付记录
+            Result<?> result = paymentService.createPaymentByOrderNo(orderNo, userId, amount, paymentMethod);
             
             if (result.getCode() == 200) {
                 log.info("支付处理成功，订单号: {}，消息: {}", orderNo, result.getMessage());

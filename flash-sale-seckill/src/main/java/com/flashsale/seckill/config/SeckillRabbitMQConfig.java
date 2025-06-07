@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.flashsale.common.mq.RabbitMQConfig;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -59,5 +62,31 @@ public class SeckillRabbitMQConfig extends RabbitMQConfig {
             ConnectionFactory connectionFactory) {
         return createBaseListenerContainerFactory(connectionFactory, 
                 (Jackson2JsonMessageConverter) seckillJsonMessageConverter());
+    }
+
+    // ==================== 秒杀服务需要的交换机和队列配置 ====================
+    
+    /**
+     * 支付操作直连交换机（秒杀服务需要监听来自此交换机的消息）
+     */
+    @Bean("seckillPaymentExchange")
+    public DirectExchange seckillPaymentExchange() {
+        return createPaymentExchange();
+    }
+
+    /**
+     * 订单状态更新队列（秒杀服务需要监听此队列）
+     */
+    @Bean("seckillOrderStatusUpdateQueue")
+    public Queue seckillOrderStatusUpdateQueue() {
+        return createOrderStatusUpdateQueue();
+    }
+
+    /**
+     * 绑定订单状态更新队列（确保秒杀服务能接收到订单状态更新消息）
+     */
+    @Bean("seckillOrderStatusUpdateBinding")
+    public Binding seckillOrderStatusUpdateBinding() {
+        return createOrderStatusUpdateBinding(seckillPaymentExchange(), seckillOrderStatusUpdateQueue());
     }
 } 

@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.flashsale.common.mq.RabbitMQConfig;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
@@ -60,5 +63,55 @@ public class PaymentRabbitMQConfig extends RabbitMQConfig {
             ConnectionFactory connectionFactory) {
         return createBaseListenerContainerFactory(connectionFactory, 
                 (Jackson2JsonMessageConverter) paymentJsonMessageConverter());
+    }
+
+    // ==================== 支付服务的交换机和队列配置 ====================
+    
+    /**
+     * 支付操作直连交换机
+     */
+    @Bean
+    public DirectExchange paymentExchange() {
+        return createPaymentExchange();
+    }
+
+    /**
+     * 死信交换机
+     */
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        return createDeadLetterExchange();
+    }
+
+    /**
+     * 订单状态更新队列
+     */
+    @Bean
+    public Queue orderStatusUpdateQueue() {
+        return createOrderStatusUpdateQueue();
+    }
+
+    /**
+     * 支付处理队列
+     */
+    @Bean
+    public Queue paymentProcessQueue() {
+        return createPaymentProcessQueue();
+    }
+
+    /**
+     * 绑定订单状态更新队列
+     */
+    @Bean
+    public Binding orderStatusUpdateBinding() {
+        return createOrderStatusUpdateBinding(paymentExchange(), orderStatusUpdateQueue());
+    }
+
+    /**
+     * 绑定支付处理队列
+     */
+    @Bean
+    public Binding paymentProcessBinding() {
+        return createPaymentProcessBinding(paymentExchange(), paymentProcessQueue());
     }
 } 

@@ -2,6 +2,7 @@ package com.flashsale.seckill.vo;
 
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -12,6 +13,7 @@ import java.util.Date;
  */
 @Data
 public class SeckillOrderVO implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     /**
@@ -74,20 +76,6 @@ public class SeckillOrderVO implements Serializable {
      */
     private Integer quantity;
 
-    /**
-     * 优惠券ID
-     */
-    private Long couponId;
-
-    /**
-     * 优惠券名称
-     */
-    private String couponName;
-
-    /**
-     * 优惠金额
-     */
-    private BigDecimal discountAmount;
 
     /**
      * 实付金额

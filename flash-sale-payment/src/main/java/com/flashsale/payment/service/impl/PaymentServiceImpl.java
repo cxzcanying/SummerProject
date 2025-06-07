@@ -423,6 +423,7 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             String key = PAYMENT_CACHE_KEY + payment.getPaymentNo();
             redisTemplate.opsForValue().set(key, payment, CACHE_EXPIRE_TIME, TimeUnit.MINUTES);
+            // 将支付信息缓存到Redis中
         } catch (Exception e) {
             log.error("缓存支付信息失败", e);
         }
@@ -492,5 +493,93 @@ public class PaymentServiceImpl implements PaymentService {
             case 0 -> "支付处理中";
             default -> "支付状态未知";
         };
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Result<PaymentVO> createPaymentByOrderNo(String orderNo, Long userId, BigDecimal amount, Integer paymentMethod) {
+        try {
+            log.info("开始直接通过订单号创建支付订单，订单号：{}，用户ID：{}，金额：{}", 
+                    orderNo, userId, amount);
+            
+            // 检查订单是否已有支付记录（通过订单号）
+            Payment existPayment = paymentMapper.findByOrderNo(orderNo);
+            if (existPayment != null) {
+                if (existPayment.getStatus() == 1) {
+                    log.warn("订单已支付，订单号：{}", orderNo);
+                    return Result.error("订单已支付，请勿重复支付");
+                } else {
+                    log.warn("订单已存在待支付记录，订单号：{}，支付流水号：{}", 
+                            orderNo, existPayment.getPaymentNo());
+                    // 返回已存在的支付记录
+                    PaymentVO paymentVO = convertToVO(existPayment);
+                    return Result.success("支付订单已存在", paymentVO);
+                }
+            }
+
+            // 创建支付记录
+            Payment payment = new Payment();
+            payment.setOrderNo(orderNo);
+            payment.setOrderId(generateOrderIdFromOrderNo(orderNo)); // 从订单号生成orderId
+            payment.setUserId(userId);
+            payment.setAmount(amount);
+            payment.setPaymentMethod(paymentMethod);
+            payment.setPaymentNo(generatePaymentNo());
+            payment.setStatus(0); // 待支付
+            payment.setCreateTime(new Date());
+            payment.setUpdateTime(new Date());
+
+            int result = paymentMapper.insert(payment);
+            if (result > 0) {
+                // 缓存支付信息
+                cachePayment(payment);
+
+                PaymentVO paymentVO = convertToVO(payment);
+                log.info("支付订单创建成功，订单号：{}，支付流水号：{}", 
+                        orderNo, payment.getPaymentNo());
+                return Result.success(paymentVO);
+            } else {
+                log.error("插入支付记录失败，订单号：{}", orderNo);
+                return Result.error("创建支付订单失败");
+            }
+        } catch (Exception e) {
+            log.error("创建支付订单异常，订单号：{}，错误信息：{}", 
+                    orderNo, e.getMessage(), e);
+            
+            // 针对重复键异常的特殊处理
+            if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
+                return Result.error("订单已存在支付记录，请勿重复创建");
+            }
+            
+            return Result.error("创建支付订单失败：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 从订单号生成订单ID
+     * 使用订单号的哈希值结合当前时间戳，确保唯一性
+     */
+    private Long generateOrderIdFromOrderNo(String orderNo) {
+        try {
+            if (orderNo != null && orderNo.startsWith("FS")) {
+                // 从订单号中提取时间戳部分
+                String timestampStr = orderNo.substring(2, Math.min(15, orderNo.length()));
+                Long timestamp = Long.parseLong(timestampStr);
+                
+                // 结合订单号的哈希值，确保唯一性
+                int hashCode = Math.abs(orderNo.hashCode());
+                // 取哈希值的后面6位，避免太大
+                long hashSuffix = hashCode % 1000000;
+                
+                // 组合时间戳和哈希值
+                return timestamp * 1000000 + hashSuffix;
+            }
+            
+            // 如果订单号格式不正确，使用当前时间戳
+            return System.currentTimeMillis();
+        } catch (Exception e) {
+            log.warn("无法从订单号解析订单ID，使用时间戳代替: {}，错误: {}", orderNo, e.getMessage());
+            return System.currentTimeMillis();
+        }
     }
 } 

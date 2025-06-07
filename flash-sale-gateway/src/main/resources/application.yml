@@ -6,8 +6,8 @@ spring:
     name: flash-sale-gateway
   profiles:
     active: dev
-#  config:
-#    import: "optional:nacos:flash-sale-gateway-dev.yml"
+  config:
+    import: "optional:nacos:flash-sale-gateway-dev.yml"
   cloud:
     nacos:
       discovery:
