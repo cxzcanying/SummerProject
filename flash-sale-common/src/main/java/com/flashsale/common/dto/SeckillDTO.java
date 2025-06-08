@@ -44,4 +44,39 @@ public class SeckillDTO implements Serializable {
      */
     @NotNull(message = "用户令牌不能为空")
     private String token;
+
+    /**
+     * 请求ID（用于幂等性控制）
+     */
+    private String requestId;
+
+    /**
+     * 用户IP地址
+     */
+    private String userIp;
+
+    /**
+     * 设备指纹
+     */
+    private String deviceFingerprint;
+
+    /**
+     * 用户角色
+     */
+    private Integer userRole;
+
+    /**
+     * 用户等级
+     */
+    private Integer userLevel;
+
+    /**
+     * 信用分数
+     */
+    private Integer creditScore;
+
+    /**
+     * 是否实名认证
+     */
+    private Boolean isVerified;
 } 

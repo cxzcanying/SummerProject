@@ -71,6 +71,46 @@ public class User implements Serializable {
     private Integer status;
 
     /**
+     * 用户角色：1-普通买家，2-VIP买家，3-商家，4-管理员
+     */
+    private Integer role;
+
+    /**
+     * 用户等级：1-普通，2-银牌，3-金牌，4-钻石
+     */
+    private Integer level;
+
+    /**
+     * 信用分数：0-100，用于防黄牛判断
+     */
+    private Integer creditScore;
+
+    /**
+     * 实名认证状态：0-未认证，1-已认证
+     */
+    private Integer verificationStatus;
+
+    /**
+     * 身份证号（脱敏存储）
+     */
+    private String idCard;
+
+    /**
+     * 风险标识：0-正常，1-可疑，2-黑名单
+     */
+    private Integer riskLevel;
+
+    /**
+     * 注册IP
+     */
+    private String registerIp;
+
+    /**
+     * 设备指纹
+     */
+    private String deviceFingerprint;
+
+    /**
      * 最后登录时间
      */
     private Date lastLoginTime;

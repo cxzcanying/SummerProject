@@ -18,6 +18,14 @@ CREATE TABLE `user` (
     `gender` tinyint DEFAULT 0 COMMENT '性别：0-未知，1-男，2-女',
     `birthday` date DEFAULT NULL COMMENT '生日',
     `status` tinyint NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    `role` tinyint NOT NULL DEFAULT 1 COMMENT '用户角色：1-普通买家，2-VIP买家，3-商家，4-管理员',
+    `level` tinyint NOT NULL DEFAULT 1 COMMENT '用户等级：1-普通，2-银牌，3-金牌，4-钻石',
+    `credit_score` int NOT NULL DEFAULT 80 COMMENT '信用分数：0-100，用于防黄牛判断',
+    `verification_status` tinyint NOT NULL DEFAULT 0 COMMENT '实名认证状态：0-未认证，1-已认证',
+    `id_card` varchar(100) DEFAULT NULL COMMENT '身份证号（脱敏存储）',
+    `risk_level` tinyint NOT NULL DEFAULT 0 COMMENT '风险标识：0-正常，1-可疑，2-黑名单',
+    `register_ip` varchar(50) DEFAULT NULL COMMENT '注册IP',
+    `device_fingerprint` varchar(100) DEFAULT NULL COMMENT '设备指纹',
     `last_login_time` datetime DEFAULT NULL COMMENT '最后登录时间',
     `last_login_ip` varchar(50) DEFAULT NULL COMMENT '最后登录IP',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -25,7 +33,11 @@ CREATE TABLE `user` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_username` (`username`),
     UNIQUE KEY `uk_phone` (`phone`),
-    KEY `idx_create_time` (`create_time`)
+    KEY `idx_create_time` (`create_time`),
+    KEY `idx_role` (`role`),
+    KEY `idx_level` (`level`),
+    KEY `idx_risk_level` (`risk_level`),
+    KEY `idx_verification_status` (`verification_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- 商品分类表
@@ -104,7 +116,7 @@ CREATE TABLE `flash_sale_product` (
     KEY `idx_end_time` (`end_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='秒杀商品表';
 
--- 秒杀订单表（分表设计）
+-- 秒杀订单表
 DROP TABLE IF EXISTS `flash_sale_order`;
 CREATE TABLE `flash_sale_order` (
     `id` bigint NOT NULL AUTO_INCREMENT COMMENT '订单ID',

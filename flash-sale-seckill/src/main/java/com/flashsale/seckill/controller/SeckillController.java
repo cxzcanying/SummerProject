@@ -8,6 +8,7 @@ import com.flashsale.seckill.dto.FlashSaleProductDTO;
 import com.flashsale.seckill.service.FlashSaleActivityService;
 import com.flashsale.seckill.service.FlashSaleProductService;
 import com.flashsale.seckill.service.SeckillService;
+import com.flashsale.seckill.service.impl.SeckillServiceImpl;
 import com.flashsale.seckill.vo.FlashSaleActivityVO;
 import com.flashsale.seckill.vo.FlashSaleProductVO;
 import com.flashsale.seckill.vo.SeckillOrderVO;
@@ -63,13 +64,38 @@ public class SeckillController {
     }
 
     /**
-     * 生成秒杀令牌
+     * 生成秒杀令牌（向后兼容）
      */
     @PostMapping("/token/generate")
     @SentinelResource(value = "seckill-token", blockHandler = "handleTokenBlock")
     public Result<String> generateSeckillToken(@RequestBody SeckillTokenRequest tokenRequest) {
         log.info("为用户{}生成秒杀令牌，商品ID：{}", tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
         return seckillService.generateSeckillToken(tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
+    }
+    
+    /**
+     * 生成增强版秒杀令牌（新接口）
+     */
+    @PostMapping("/token/enhanced")
+    @SentinelResource(value = "enhanced-seckill-token", blockHandler = "handleEnhancedTokenBlock")
+    public Result<String> generateEnhancedSeckillToken(@RequestBody EnhancedTokenRequest tokenRequest, 
+                                                       HttpServletRequest request) {
+        log.info("为用户{}生成增强秒杀令牌，商品ID：{}", tokenRequest.getUserId(), tokenRequest.getFlashSaleProductId());
+        
+        // 获取客户端IP
+        String userIp = getClientIp(request);
+        
+        // 调用增强令牌生成服务
+        return ((SeckillServiceImpl) seckillService).generateEnhancedSeckillToken(
+            tokenRequest.getUserId(), 
+            tokenRequest.getFlashSaleProductId(),
+            userIp,
+            tokenRequest.getDeviceFingerprint(),
+            tokenRequest.getUserLevel(),
+            tokenRequest.getCreditScore(),
+            tokenRequest.getIsVerified(),
+            tokenRequest.getChallengeAnswer()
+        );
     }
 
     /**
@@ -209,12 +235,105 @@ public class SeckillController {
         log.info("获取订单详情，订单号：{}", orderNo);
         return seckillService.getSeckillOrderDetail(orderNo);
     }
+    
+    /**
+     * 异步秒杀接口 - 削峰填谷
+     */
+    @PostMapping("/async")
+    @SentinelResource(value = "seckill-async", blockHandler = "handleAsyncBlock")
+    public Result<String> doSeckillAsync(@RequestBody @Valid SeckillDTO seckillDTO, HttpServletRequest request) {
+        log.info("收到异步秒杀请求，用户ID：{}，商品ID：{}", seckillDTO.getUserId(), seckillDTO.getFlashSaleProductId());
+        
+        // 补充请求信息
+        String userIp = getClientIp(request);
+        String deviceFingerprint = request.getHeader("Device-Fingerprint");
+        String userAgent = request.getHeader("User-Agent");
+        
+        seckillDTO.setUserIp(userIp);
+        seckillDTO.setDeviceFingerprint(deviceFingerprint);
+        // userAgent 字段暂时不设置，如需要可以添加到DTO中
+        
+        return ((SeckillServiceImpl) seckillService).doSeckillAsync(seckillDTO);
+    }
+    
+    /**
+     * 查询异步秒杀结果
+     */
+    @GetMapping("/async/result/{taskId}")
+    @SentinelResource(value = "seckill-async-query", blockHandler = "handleAsyncQueryBlock")
+    public Result<Object> getSeckillAsyncResult(@PathVariable String taskId) {
+        log.info("查询异步秒杀结果，任务ID：{}", taskId);
+        return ((SeckillServiceImpl) seckillService).getSeckillAsyncResult(taskId);
+    }
+    
+    /**
+     * 检查队列状态
+     */
+    @GetMapping("/queue/status")
+    @SentinelResource(value = "queue-status", blockHandler = "handleQueueStatusBlock")
+    public Result<Object> checkQueueStatus(@RequestParam Long userId, @RequestParam Long flashSaleProductId) {
+        log.info("检查队列状态，用户ID：{}，商品ID：{}", userId, flashSaleProductId);
+        return ((SeckillServiceImpl) seckillService).checkQueueStatus(userId, flashSaleProductId);
+    }
 
     @Setter
     @Getter
     public static class SeckillTokenRequest {
         private Long flashSaleProductId;
         private Long userId;
+    }
+    
+    @Setter
+    @Getter
+    public static class EnhancedTokenRequest {
+        private Long userId;
+        private Long flashSaleProductId;
+        private String deviceFingerprint;
+        private Integer userLevel;
+        private Integer creditScore;
+        private Boolean isVerified;
+        private String challengeAnswer;
+    }
+    
+    /**
+     * 获取客户端真实IP地址
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String xip = request.getHeader("X-Real-IP");
+        String xfor = request.getHeader("X-Forwarded-For");
+        
+        if (xfor != null && xfor.length() != 0 && !"unknown".equalsIgnoreCase(xfor)) {
+            // 多次反向代理后会有多个ip值，第一个ip才是真实ip
+            int index = xfor.indexOf(",");
+            if (index != -1) {
+                return xfor.substring(0, index);
+            } else {
+                return xfor;
+            }
+        }
+        
+        xfor = xip;
+        if (xfor != null && xfor.length() != 0 && !"unknown".equalsIgnoreCase(xfor)) {
+            return xfor;
+        }
+        
+        if (xfor == null || xfor.length() == 0 || "unknown".equalsIgnoreCase(xfor)) {
+            xfor = request.getHeader("Proxy-Client-IP");
+        }
+        if (xfor == null || xfor.length() == 0 || "unknown".equalsIgnoreCase(xfor)) {
+            xfor = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (xfor == null || xfor.length() == 0 || "unknown".equalsIgnoreCase(xfor)) {
+            xfor = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (xfor == null || xfor.length() == 0 || "unknown".equalsIgnoreCase(xfor)) {
+            xfor = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (xfor == null || xfor.length() == 0 || "unknown".equalsIgnoreCase(xfor)) {
+            xfor = request.getRemoteAddr();
+        }
+        
+        return xfor;
     }
 
     /**
@@ -233,5 +352,34 @@ public class SeckillController {
     public Result<String> handleQueryBlock(String seckillId, BlockException ex) {
         log.warn("查询请求被限流: {}", ex.getMessage());
         return Result.error(429, "查询请求过于频繁，请稍后重试");
+    }
+
+    public Result<String> handleEnhancedTokenBlock(EnhancedTokenRequest tokenRequest, HttpServletRequest request, BlockException ex) {
+        log.warn("增强令牌生成请求被限流: {}", ex.getMessage());
+        return Result.error(429, "令牌生成请求过于频繁，请稍后重试");
+    }
+    
+    /**
+     * 异步秒杀限流处理
+     */
+    public Result<String> handleAsyncBlock(SeckillDTO seckillDTO, HttpServletRequest request, BlockException ex) {
+        log.warn("异步秒杀被限流，用户ID：{}，商品ID：{}", seckillDTO.getUserId(), seckillDTO.getFlashSaleProductId());
+        return Result.error("系统繁忙，请使用异步处理模式或稍后重试");
+    }
+    
+    /**
+     * 异步查询限流处理
+     */
+    public Result<Object> handleAsyncQueryBlock(String taskId, BlockException ex) {
+        log.warn("异步查询被限流，任务ID：{}", taskId);
+        return Result.error("查询频次过高，请稍后重试");
+    }
+    
+    /**
+     * 队列状态查询限流处理
+     */
+    public Result<Object> handleQueueStatusBlock(Long userId, Long flashSaleProductId, BlockException ex) {
+        log.warn("队列状态查询被限流，用户ID：{}，商品ID：{}", userId, flashSaleProductId);
+        return Result.error("查询频次过高，请稍后重试");
     }
 } 
